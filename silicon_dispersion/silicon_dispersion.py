@@ -235,19 +235,52 @@ def si_plasma_refraction(lm,Ne,Nh):
     dnr = si_plasma_dn(lm,Ne,Nh)
     return dnr - 1j * dni
 
-def si_complex_index_model(lm=1.55*u.um, T=300*u.degK, Ne=0./u.cm**3, Nh=0./u.cm**3):
-    lm_um = lm.to(u.um).m
+def si_complex_index_model(λ=1.55*u.um, T=300*u.degK, Ne=0./u.cm**3, Nh=0./u.cm**3):
+    λ_um = λ.to(u.um).m
     T_K = T.to(u.degK).m
     Ne_cm3 = Ne.to(1/u.cm**3).m
     Nh_cm3 = Nh.to(1/u.cm**3).m
-    nr = n_r_si_lm_T(lm_um,T_K)
-    ni = n_i_si_lm_T(lm_um,T_K)
-    return nr - 1j*ni + si_plasma_refraction(lm_um,Ne_cm3,Nh_cm3)
+    if type(λ_um)!=np.ndarray and type(T_K)!=np.ndarray and type(Ne_cm3)!=np.ndarray and type(Nh_cm3)!=np.ndarray:
+        nr = n_r_si_lm_T(λ_um,T_K)
+        ni = n_i_si_lm_T(λ_um,T_K)
+        return nr - 1j*ni + si_plasma_refraction(λ_um,Ne_cm3,Nh_cm3)
+    else:
+        dims = [λ_um,T_K,Ne_cm3,Nh_cm3]
+        for dind, dim in enumerate(dims):
+            if type(dim)!=np.ndarray:
+                dims[dind] = np.array([dim,])
+        λ_um,T_K,Ne_cm3,Nh_cm3 = tuple(dims)
+        output = np.empty((len(λ_um),len(T_K),len(Ne_cm3),len(Nh_cm3)),dtype=np.complex128)
+        for lind,ll in enumerate(λ_um):
+            for Tind,TT in enumerate(T_K):
+                for Neind,NNe in enumerate(Ne_cm3):
+                    for Nhind,NNh in enumerate(Nh_cm3):
+                        nr = n_r_si_lm_T(ll,TT)
+                        ni = n_i_si_lm_T(ll,TT)
+                        output[lind,Tind,Neind,Nhind] = nr - 1j*ni + si_plasma_refraction(ll,NNe,NNh)
+        return output.squeeze()
 
-def si_real_index_model(lm=1.55*u.um, T=300*u.degK, Ne=0./u.cm**3, Nh=0./u.cm**3):
-    lm_um = lm.to(u.um).m
+
+
+def si_real_index_model(λ=1.55*u.um, T=300*u.degK, Ne=0./u.cm**3, Nh=0./u.cm**3):
+    λ_um = λ.to(u.um).m
     T_K = T.to(u.degK).m
     Ne_cm3 = Ne.to(1/u.cm**3).m
     Nh_cm3 = Nh.to(1/u.cm**3).m
-    nr = n_r_si_lm_T(lm_um,T_K)
-    return nr + np.real(si_plasma_refraction(lm_um,Ne_cm3,Nh_cm3))
+    if type(λ_um)!=np.ndarray and type(T_K)!=np.ndarray and type(Ne_cm3)!=np.ndarray and type(Nh_cm3)!=np.ndarray:
+        nr = n_r_si_lm_T(λ_um,T_K)
+        return nr + np.real(si_plasma_refraction(λ_um,Ne_cm3,Nh_cm3))
+    else:
+        dims = [λ_um,T_K,Ne_cm3,Nh_cm3]
+        for dind, dim in enumerate(dims):
+            if type(dim)!=np.ndarray:
+                dims[dind] = np.array([dim,])
+        λ_um,T_K,Ne_cm3,Nh_cm3 = tuple(dims)
+        output = np.empty((len(λ_um),len(T_K),len(Ne_cm3),len(Nh_cm3)),dtype=np.float64)
+        for lind,ll in enumerate(λ_um):
+            for Tind,TT in enumerate(T_K):
+                for Neind,NNe in enumerate(Ne_cm3):
+                    for Nhind,NNh in enumerate(Nh_cm3):
+                        nr = n_r_si_lm_T(ll,TT)
+                        output[lind,Tind,Neind,Nhind] = nr + np.real(si_plasma_refraction(ll,NNe,NNh))
+        return output.squeeze()
