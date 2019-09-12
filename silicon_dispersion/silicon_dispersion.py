@@ -112,8 +112,8 @@ def green_k_itp(lm,T):
 Li_n_itp = sp.interpolate.interp2d(lm_Li, T_Li, n_T_lm_Li)
 
 T = 100
-print('n_green: {}'.format(green_n_itp(1.2,T)))
-print('n_Li: {}'.format(Li_n_itp(1.2,T)[0]))
+# print('n_green: {}'.format(green_n_itp(1.2,T)))
+# print('n_Li: {}'.format(Li_n_itp(1.2,T)[0]))
 
 r_200 = Li_n_itp(1.2,200)[0] / green_n_itp(1.2,200)
 r_150 = Li_n_itp(1.2,150)[0] / green_n_itp(1.2,150)

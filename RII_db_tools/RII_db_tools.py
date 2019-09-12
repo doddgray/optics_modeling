@@ -18,7 +18,7 @@ import yaml
 import numpy as np
 import sympy as sp
 from scipy import interpolate
-from instrumental import Q_
+from instrumental import Q_, u
 from bs4 import BeautifulSoup as bs
 from pathlib import Path
 home = str( Path.home() )
@@ -317,7 +317,7 @@ def from_url(url):
     dataset = page + '.yml'
     return material, dataset, book
 
-def n_model(material="",dataset="",lm_range = 0, book="main",formula=0,coeffs=0):
+def n_model(material="",dataset="",lm_range = 0, book="main",formula=0,coeffs=0,verbose=False):
     """ Return a lambdified model of a material's index based on
         a symbolic representation created using coefficients and a
         formula from RII."""
@@ -357,9 +357,10 @@ def n_model(material="",dataset="",lm_range = 0, book="main",formula=0,coeffs=0)
                 if dataset_lm_range and not(max(lm_in)<=max(dataset_lm_range) and min(lm_in)>=min(dataset_lm_range)):
                     raise Exception('input wavelength outside of dataset validity range')
                 return n
-            print('Using dataset {}'.format(dataset))
-            print('wavelength range: {}'.format(dataset_lm_range))
-            print(u'comments: {}'.format(dataset_comms))
+            if verbose:
+                print('Using dataset {}'.format(dataset))
+                print('wavelength range: {}'.format(dataset_lm_range))
+                print(u'comments: {}'.format(dataset_comms))
             return n_interp_unitful
         formula, coeffs = index_coeffs(material,dataset,book)
     n_s = n_symb(formula,coeffs)
@@ -370,19 +371,40 @@ def n_model(material="",dataset="",lm_range = 0, book="main",formula=0,coeffs=0)
         if dataset_lm_range and not(max(lm_in)<=max(dataset_lm_range) and min(lm_in)>=min(dataset_lm_range)):
                     raise Exception('input wavelength outside of dataset validity range')
         return n(lm_in)
-    if dataset:
+    if (dataset and verbose):
         print('Using dataset {}'.format(dataset))
-    if dataset_lm_range:
+    if (dataset_lm_range and verbose):
         print('wavelength range: {}'.format(dataset_lm_range))
-    if dataset_comms:
+    if (dataset_comms and verbose):
         print(u'comments: {}'.format(dataset_comms))
 
     return n_unitful
 
-def n_g_model(material="",dataset="",book="main",formula=0,coeffs=0):
+def n_g_model(material="",dataset="",book="main",formula=0,coeffs=0,verbose=False,smoothing=0):
     """ Return a lambdified model of a material's group index based on
         a symbolic representation created using coefficients and a
         formula from RII."""
+    # case 0: tabulated data rather than Sellmeier form
+    if ((dataset_type(material,dataset,book) =='tabulated nk') or (dataset_type(material,dataset,book) =='tabulated n')):
+        dataset_lm_range = dataset_range(material,dataset,book)
+        lm_tab, n_tab, k_tab = n_k_tabulated(material,dataset,book)
+        ω_tab = (lm_tab*u.um).to(1/u.s,'sp') # tabulated RII lambda values are in microns
+        tck_n = interpolate.splrep(ω_tab[::-1].m,n_tab[::-1],s=smoothing) # spline routines require input x-values sorted largest to smallest
+        def n_interp_unitful(lm_unitful):
+            ω_in_Hz = lm_unitful.to(1/u.s,'sp')[::-1].m # convert input wavelengths to frequencies in Hz, order largest to smallest
+            lm_in = Q_(lm_unitful).to('um').magnitude
+            n_interp = interpolate.splev(ω_in_Hz,tck_n,der=0)
+            dn_dω_interp = interpolate.splev(ω_in_Hz,tck_n,der=1)
+            ng_interp = n_interp + ω_in_Hz * dn_dω_interp
+            if dataset_lm_range and not(max(lm_in)<=max(dataset_lm_range) and min(lm_in)>=min(dataset_lm_range)):
+                raise Exception('input wavelength outside of dataset validity range')
+            return ng_interp[::-1]
+        if verbose:
+            print('Using dataset {}'.format(dataset))
+            print('wavelength range: {}'.format(dataset_lm_range))
+            print(u'comments: {}'.format(dataset_comms))
+        return n_interp_unitful
+    # case 1: Sellmeier form
     if formula==0 and coeffs==0:
         formula, coeffs = index_coeffs(material,dataset,book)
     n_s = n_symb(formula,coeffs)
