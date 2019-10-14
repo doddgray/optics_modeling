@@ -102,7 +102,7 @@ def n_g_MgO_LN(lm_in,T_in,axis='e'):
     return n_g(lm_um, T_C)
 
 
-def gvd_MgO_LN(lm_in,T_in):
+def gvd_MgO_LN(lm_in,T_in,axis='e'):
     """Sellmeier Equation model for the temperature and wavelength dependence
     of the group velocity dispersion of 5% MgO:LiNbO3. Equation form is based on
     "Temperature and wavelength dependent refractive index equations
@@ -114,7 +114,7 @@ def gvd_MgO_LN(lm_in,T_in):
     """
     lm_um = Q_(lm_in).to(u.um).magnitude
     T_C = Q_(T_in).to(u.degC).magnitude
-    lm, T, n_sym = n_MgO_LN_sym()
+    lm, T, n_sym = n_MgO_LN_sym(axis=axis)
     n_sym_double_prime = sp.diff(n_sym,lm,lm)
     c = Q_(3e8,'m/s') # unitful definition of speed of light
     gvd_sym_no_prefactors = (lm**3)*n_sym_double_prime # symbolic gvd without unitful prefactors, to be made unitful below
@@ -303,7 +303,7 @@ def gvd_Si3N4(lm_in,T_in):
     """
     lm_um = Q_(lm_in).to(u.um).magnitude
     T_C = Q_(T_in).to(u.degC).magnitude
-    lm, T, n_sym = n_Si3N4()
+    lm, T, n_sym = n_Si3N4_sym()
     n_sym_double_prime = sp.diff(n_sym,lm,lm)
     c = Q_(3e8,'m/s') # unitful definition of speed of light
     gvd_sym_no_prefactors = (lm**3)*n_sym_double_prime # symbolic gvd without unitful prefactors, to be made unitful below
@@ -396,7 +396,7 @@ def gvd_SiO2(lm_in,T_in):
     """
     lm_um = Q_(lm_in).to(u.um).magnitude
     T_C = Q_(T_in).to(u.degC).magnitude
-    lm, T, n_sym = n_SiO2()
+    lm, T, n_sym = n_SiO2_sym()
     n_sym_double_prime = sp.diff(n_sym,lm,lm)
     c = Q_(3e8,'m/s') # unitful definition of speed of light
     gvd_sym_no_prefactors = (lm**3)*n_sym_double_prime # symbolic gvd without unitful prefactors, to be made unitful below
