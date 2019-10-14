@@ -222,6 +222,191 @@ def gvd_GaAs(lm_in,T_in):
     return gvd.to('fs**2 / mm')
 
 
+########### Si3N4 Sellmeier model for waveguide phase matching calculations
+
+def n_Si3N4_sym():
+    """This function creates a symbolic representation (using SymPy) of the
+    Sellmeier Equation model for the index of refraction.
+    Equation form is based on Luke, Okawachi, Lamont, Gaeta and Lipson,
+    "Broadband mid-infrared frequency comb generation in a Si3N4 microresonator"
+    Optics Letters Vol. 40, Issue 21, pp. 4823-4826 (2015)
+    https://doi.org/10.1364/OL.40.004823
+    valid from 0.31–5.504 um
+
+    Thermo-optic coefficients from
+    Xue, et al.
+    "Thermal tuning of Kerr frequency combs in silicon nitride microring resonators"
+    Opt. Express 24.1 (2016) http://doi.org/10.1364/OE.24.000687
+
+    This model is then exported to other functions that use it and its
+    derivatives to return index, group index and GVD values as a function
+    of temperature and wavelength.
+
+    Variable units are lm in [um] and T in [deg C]
+
+    """
+    A0 = 1
+    B1 = 3.0249,
+    C1 = (0.1353406)**2, # um^2
+    B2 = 40314,
+    C2 = (1239.842)**2, # um^2
+    dn_dT = 2.96e-5 # 1/degK
+    lm, T = sp.symbols('lm T')
+    T0 = 24.5 # reference temperature in [Deg C]
+    n_sym = sp.sqrt(   A0  + ( B1 * lm**2 ) / ( lm**2 - C1 ) \
+                        + ( B2 * lm**2 ) / ( lm**2 - C2 ) ) + dn_dT * ( T - T0 )
+    return lm, T, n_sym
+
+def n_Si3N4(lm_in,T_in):
+    """Sellmeier Equation model for the temperature and wavelength dependence
+    of the index of refraction of Si3N4. Equation form is based on
+    "Broadband mid-infrared frequency comb generation in a Si3N4 microresonator"
+    by Luke et al., Optics Letters Vol. 40, Issue 21, pp. 4823-4826 (2015)
+
+    Variable [units] passed to symbolic equation are lm in [um] and T in [deg C]
+
+    """
+    lm_um = np.array([Q_(lm_in).to(u.um).magnitude]).flatten()
+    T_C = np.array([Q_(T_in).to(u.degC).magnitude]).flatten()
+    lm, T, n_sym = n_Si3N4_sym()
+    n = sp.lambdify([lm,T],n_sym,'numpy')
+    output = np.zeros((T_C.size,lm_um.size))
+    for T_idx, TT in enumerate(T_C):
+        output[T_idx,:] = n(lm_um, T_C[T_idx])
+    return output
+
+def n_g_Si3N4(lm_in,T_in):
+    """Sellmeier Equation model for the temperature and wavelength dependence
+    of the group index of refraction of Si3N4. Equation form is based on
+    "Broadband mid-infrared frequency comb generation in a Si3N4 microresonator"
+    by Luke et al., Optics Letters Vol. 40, Issue 21, pp. 4823-4826 (2015)
+
+    Variable [units] passed to symbolic equation are lm in [um] and T in [deg C]
+
+    """
+    lm_um = Q_(lm_in).to(u.um).magnitude
+    T_C = Q_(T_in).to(u.degC).magnitude
+    lm, T, n_sym = n_Si3N4_sym()
+    n_sym_prime = sp.diff(n_sym,lm)
+    n_g_sym = n_sym - lm*n_sym_prime
+    n_g = sp.lambdify([lm,T],n_g_sym,'numpy')
+    return n_g(lm_um, T_C)
+
+
+def gvd_Si3N4(lm_in,T_in):
+    """Sellmeier Equation model for the temperature and wavelength dependence
+    of the group velocity dispersion of Si3N4. Equation form is based on
+    "Broadband mid-infrared frequency comb generation in a Si3N4 microresonator"
+    by Luke et al., Optics Letters Vol. 40, Issue 21, pp. 4823-4826 (2015)
+
+    Variable [units] passed to symbolic equation are lm in [um] and T in [deg C]
+
+    """
+    lm_um = Q_(lm_in).to(u.um).magnitude
+    T_C = Q_(T_in).to(u.degC).magnitude
+    lm, T, n_sym = n_Si3N4()
+    n_sym_double_prime = sp.diff(n_sym,lm,lm)
+    c = Q_(3e8,'m/s') # unitful definition of speed of light
+    gvd_sym_no_prefactors = (lm**3)*n_sym_double_prime # symbolic gvd without unitful prefactors, to be made unitful below
+    gvd_no_prefactors = sp.lambdify([lm,T],gvd_sym_no_prefactors,'numpy') # numerical gvd without unitful prefactors
+    gvd = (1 / (2 * np.pi * (c**2))) * Q_(gvd_no_prefactors(lm_um,T_C),'um')
+    return gvd.to('fs**2 / mm')
+
+
+########### SiO2 Sellmeier model for waveguide phase matching calculations
+
+def n_Si02_sym():
+    """This function creates a symbolic representation (using SymPy) of the
+    Sellmeier Equation model for the index of refraction.
+    Equation form is based on Kitamura, et al.
+    "Optical constants of silica glass from extreme ultraviolet to far
+    infrared at near room temperature." Applied optics 46.33 (2007): 8118-8133.
+    which references Malitson, “Interspecimen comparison of the refractive
+    index of fused silica,” J. Opt. Soc. Am.55,1205–1209 (1965)
+    and has been validated from 0.21-6.7 μm (free space wavelength)
+
+    Thermo-optic coefficients from the literature, forgot source.
+
+    This model is then exported to other functions that use it and its
+    derivatives to return index, group index and GVD values as a function
+    of temperature and wavelength.
+
+    Variable units are lm in [um] and T in [deg C]
+
+    """
+    A0 = 1
+    B1 = 0.6961663,
+    C1 = (0.0684043)**2, # um^2
+    B2 = 0.4079426,
+    C2 = (0.1162414)**2, # um^2
+    B3 = 0.8974794,
+    C3 = (9.896161)**2, # um^2
+    dn_dT = 6.1e-6 # 1/degK
+    lm, T = sp.symbols('lm T')
+    T0 = 20 # reference temperature in [Deg C]
+    n_sym = sp.sqrt(   A0  + ( B1 * lm**2 ) / ( lm**2 - C1 ) \
+                        + ( B2 * lm**2 ) / ( lm**2 - C2 ) \
+                        + ( B3 * lm**2 ) / ( lm**2 - C3 ) ) + dn_dT * ( T - T0 )
+    return lm, T, n_sym
+
+def n_Si02(lm_in,T_in):
+    """Sellmeier Equation model for the temperature and wavelength dependence
+    of the index of refraction of SiO2. Equation form is based on
+    Kitamura, et al.
+    "Optical constants of silica glass from extreme ultraviolet to far
+    infrared at near room temperature." Applied optics 46.33 (2007): 8118-8133.
+
+    Variable [units] passed to symbolic equation are lm in [um] and T in [deg C]
+
+    """
+    lm_um = np.array([Q_(lm_in).to(u.um).magnitude]).flatten()
+    T_C = np.array([Q_(T_in).to(u.degC).magnitude]).flatten()
+    lm, T, n_sym = n_SiO2_sym()
+    n = sp.lambdify([lm,T],n_sym,'numpy')
+    output = np.zeros((T_C.size,lm_um.size))
+    for T_idx, TT in enumerate(T_C):
+        output[T_idx,:] = n(lm_um, T_C[T_idx])
+    return output
+
+def n_g_Si02(lm_in,T_in):
+    """Sellmeier Equation model for the temperature and wavelength dependence
+    of the group index of refraction of SiO2. Equation form is based on
+    Kitamura, et al.
+    "Optical constants of silica glass from extreme ultraviolet to far
+    infrared at near room temperature." Applied optics 46.33 (2007): 8118-8133.
+
+    Variable [units] passed to symbolic equation are lm in [um] and T in [deg C]
+
+    """
+    lm_um = Q_(lm_in).to(u.um).magnitude
+    T_C = Q_(T_in).to(u.degC).magnitude
+    lm, T, n_sym = n_SiO2_sym()
+    n_sym_prime = sp.diff(n_sym,lm)
+    n_g_sym = n_sym - lm*n_sym_prime
+    n_g = sp.lambdify([lm,T],n_g_sym,'numpy')
+    return n_g(lm_um, T_C)
+
+
+def gvd_Si02(lm_in,T_in):
+    """Sellmeier Equation model for the temperature and wavelength dependence
+    of the group velocity dispersion of SiO2. Equation form is based on
+    Kitamura, et al.
+    "Optical constants of silica glass from extreme ultraviolet to far
+    infrared at near room temperature." Applied optics 46.33 (2007): 8118-8133.
+
+    Variable [units] passed to symbolic equation are lm in [um] and T in [deg C]
+
+    """
+    lm_um = Q_(lm_in).to(u.um).magnitude
+    T_C = Q_(T_in).to(u.degC).magnitude
+    lm, T, n_sym = n_SiO2()
+    n_sym_double_prime = sp.diff(n_sym,lm,lm)
+    c = Q_(3e8,'m/s') # unitful definition of speed of light
+    gvd_sym_no_prefactors = (lm**3)*n_sym_double_prime # symbolic gvd without unitful prefactors, to be made unitful below
+    gvd_no_prefactors = sp.lambdify([lm,T],gvd_sym_no_prefactors,'numpy') # numerical gvd without unitful prefactors
+    gvd = (1 / (2 * np.pi * (c**2))) * Q_(gvd_no_prefactors(lm_um,T_C),'um')
+    return gvd.to('fs**2 / mm')
+
 
 ###### "Miller Delta" scaling function for nonlinear polarizabilities
 

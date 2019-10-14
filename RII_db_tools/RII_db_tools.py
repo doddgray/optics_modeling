@@ -397,7 +397,7 @@ def n_g_model(material="",dataset="",book="main",formula=0,coeffs=0,verbose=Fals
             dn_dω_interp = interpolate.splev(ω_in_Hz,tck_n,der=1)
             ng_interp = n_interp + ω_in_Hz * dn_dω_interp
             if dataset_lm_range and not(max(lm_in)<=max(dataset_lm_range) and min(lm_in)>=min(dataset_lm_range)):
-                raise Exception('input wavelength outside of dataset validity range')
+                print('Warning: input wavelength outside or at boundary of dataset validity range')
             return ng_interp[::-1]
         if verbose:
             print('Using dataset {}'.format(dataset))
