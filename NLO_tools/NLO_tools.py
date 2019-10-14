@@ -246,15 +246,14 @@ def n_Si3N4_sym():
 
     """
     A0 = 1
-    B1 = 3.0249,
-    C1 = (0.1353406)**2, # um^2
-    B2 = 40314,
-    C2 = (1239.842)**2, # um^2
+    B1 = 3.0249
+    C1 = (0.1353406)**2 # um^2
+    B2 = 40314
+    C2 = (1239.842)**2 # um^2
     dn_dT = 2.96e-5 # 1/degK
     lm, T = sp.symbols('lm T')
     T0 = 24.5 # reference temperature in [Deg C]
-    n_sym = sp.sqrt(   A0  + ( B1 * lm**2 ) / ( lm**2 - C1 ) \
-                        + ( B2 * lm**2 ) / ( lm**2 - C2 ) ) + dn_dT * ( T - T0 )
+    n_sym = sp.sqrt(   A0  + ( B1 * lm**2 ) / ( lm**2 - C1 ) + ( B2 * lm**2 ) / ( lm**2 - C2 ) ) + dn_dT * ( T - T0 )
     return lm, T, n_sym
 
 def n_Si3N4(lm_in,T_in):
@@ -315,7 +314,7 @@ def gvd_Si3N4(lm_in,T_in):
 
 ########### SiO2 Sellmeier model for waveguide phase matching calculations
 
-def n_Si02_sym():
+def n_SiO2_sym():
     """This function creates a symbolic representation (using SymPy) of the
     Sellmeier Equation model for the index of refraction.
     Equation form is based on Kitamura, et al.
@@ -335,21 +334,19 @@ def n_Si02_sym():
 
     """
     A0 = 1
-    B1 = 0.6961663,
-    C1 = (0.0684043)**2, # um^2
-    B2 = 0.4079426,
-    C2 = (0.1162414)**2, # um^2
-    B3 = 0.8974794,
-    C3 = (9.896161)**2, # um^2
+    B1 = 0.6961663
+    C1 = (0.0684043)**2 # um^2
+    B2 = 0.4079426
+    C2 = (0.1162414)**2 # um^2
+    B3 = 0.8974794
+    C3 = (9.896161)**2 # um^2
     dn_dT = 6.1e-6 # 1/degK
     lm, T = sp.symbols('lm T')
     T0 = 20 # reference temperature in [Deg C]
-    n_sym = sp.sqrt(   A0  + ( B1 * lm**2 ) / ( lm**2 - C1 ) \
-                        + ( B2 * lm**2 ) / ( lm**2 - C2 ) \
-                        + ( B3 * lm**2 ) / ( lm**2 - C3 ) ) + dn_dT * ( T - T0 )
+    n_sym = sp.sqrt(   A0  + ( B1 * lm**2 ) / ( lm**2 - C1 ) + ( B2 * lm**2 ) / ( lm**2 - C2 ) + ( B3 * lm**2 ) / ( lm**2 - C3 ) ) + dn_dT * ( T - T0 )
     return lm, T, n_sym
 
-def n_Si02(lm_in,T_in):
+def n_SiO2(lm_in,T_in):
     """Sellmeier Equation model for the temperature and wavelength dependence
     of the index of refraction of SiO2. Equation form is based on
     Kitamura, et al.
@@ -368,7 +365,7 @@ def n_Si02(lm_in,T_in):
         output[T_idx,:] = n(lm_um, T_C[T_idx])
     return output
 
-def n_g_Si02(lm_in,T_in):
+def n_g_SiO2(lm_in,T_in):
     """Sellmeier Equation model for the temperature and wavelength dependence
     of the group index of refraction of SiO2. Equation form is based on
     Kitamura, et al.
@@ -387,7 +384,7 @@ def n_g_Si02(lm_in,T_in):
     return n_g(lm_um, T_C)
 
 
-def gvd_Si02(lm_in,T_in):
+def gvd_SiO2(lm_in,T_in):
     """Sellmeier Equation model for the temperature and wavelength dependence
     of the group velocity dispersion of SiO2. Equation form is based on
     Kitamura, et al.

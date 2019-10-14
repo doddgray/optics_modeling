@@ -1,0 +1,15 @@
+*~
+*.pyc
+*.cpython-35.pyc.[0-9]*
+*.cpython-36.pyc.[0-9]*
+*.cpython-37.pyc.[0-9]*
+*.cpython-35.pyc
+*.cpython-36.pyc
+*.cpython-37.pyc
+*.pyo
+*.swp
+backup_for_*
+*.cpython*
+temp*
+*checkpoint.ipynb
+*.log
