@@ -330,9 +330,14 @@ def jac_eigvals_sweep(Pa,Pb,Δ,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=30
                 # print(f'a[inds]: {a[inds]}')
             j = jacobian(a[inds],b[inds],n[inds],T[inds],Δ=Δ[inds[0]],s=s,
                 γ=γ,μ=μ,r=r,ζ=ζ,τ_th=τ_th,η=η,τ_fc=τ_fc,χ=χ)
-            eigvals[inds,:] = np.linalg.eigvals(j)
-            det_j[inds] = np.linalg.det(j)
-            L[inds] = ( np.matrix.trace(j)**2 - np.matrix.trace(np.matmul(j,j)) ) * np.matrix.trace(j) - 2 * det_j[inds]
+            try:
+                eigvals[inds,:] = np.linalg.eigvals(j)
+                det_j[inds] = np.linalg.det(j)
+                L[inds] = ( np.matrix.trace(j)**2 - np.matrix.trace(np.matmul(j,j)) ) * np.matrix.trace(j) - 2 * det_j[inds]
+            except:
+                eigvals[inds,:] = np.zeros(6)
+                det_j[inds] = 0.
+                L[inds] = 0.
     return a,b,n,T,eigvals,det_j,L
 
 def analyze_eigvals(data,return_data=False):
@@ -613,7 +618,7 @@ def expt2norm_params(p_expt=p_expt_def,p_mat=p_si,verbose=True):
 ################################################################################
 
 
-def compute_PVΔ_sweep(p_expt=p_expt_def,p_mat=p_si,sweep_name='test',nEq=6,n_proc=n_proc_def,data_dir=data_dir,verbose=True,return_data=False):
+def compute_PVΔ_sweep(p_expt=p_expt_def,p_mat=p_si,sweep_name='test',nEq=6,n_proc=8,data_dir=data_dir,verbose=True,return_data=False):
     """
     Find steady state solutions and corresponding Jacobian eigenvalues
     for the specified normalized 2-mode+free-carrier+thermal microring model

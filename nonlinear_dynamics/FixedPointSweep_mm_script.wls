@@ -6,7 +6,7 @@ dataDir = var[[1]]
 fname = var[[2]]
 DeltaMin = ToExpression[var[[3]]]
 DeltaMax = ToExpression[var[[4]]]
-dDelta = ToExpression[var[[5]]]
+nDelta = ToExpression[var[[5]]]
 ss = ToExpression[var[[6]]]
 gamma = ToExpression[var[[7]]]
 mu = ToExpression[var[[8]]]
@@ -31,10 +31,10 @@ FixedPoints[Delta_,ss_,gamma_,mu_,rr_,zeta_,tauth_,eta_,taufc_,chi_] := (
 	roots=NSolve[Reduce[Rationalize[sys],{Pa,Pb}],{Pa,Pb}]
 	)
 	
-FPsweep[fname_,DeltaMin_,DeltaMax_,dDelta_,ss_,gamma_,mu_,rr_,zeta_,tauth_,eta_,taufc_,chi_] := (
-	DeltaRange := Rationalize[Range[DeltaMin,DeltaMax,dDelta]];
+FPsweep[fname_,DeltaMin_,DeltaMax_,nDelta_,ss_,gamma_,mu_,rr_,zeta_,tauth_,eta_,taufc_,chi_] := (
+	DeltaRange := Rationalize[Subdivide[DeltaMin,DeltaMax,nDelta]];
 	data:=FixedPoints[#,ss,gamma,mu,rr,zeta,tauth,eta,taufc,chi]&/@ DeltaRange;
 	Export[fname,data,"CSV"];
 	)
 SetDirectory[dataDir];
-FPsweep[fname,DeltaMin,DeltaMax,dDelta,ss,gamma,mu,rr,zeta,tauth,eta,taufc,chi];
+FPsweep[fname,DeltaMin,DeltaMax,nDelta,ss,gamma,mu,rr,zeta,tauth,eta,taufc,chi];
