@@ -1,4 +1,4 @@
-
+# -*- coding: utf-8 -*-
 from os import path, makedirs
 import subprocess as subp
 import numpy as np
@@ -12,17 +12,34 @@ from glob import glob
 import os
 from multiprocessing import Pool
 from instrumental import u
-# os.environ['WolframKernel'] = '/usr/local/Wolfram/Mathematica/11.3/Executables/WolframKernel'
-os.environ['WolframKernel'] = '/usr/local/Wolfram/Mathematica/12.0/Executables/WolframKernel'
+from math import log10, floor
+import socket
+from pathlib import Path
+import shutil
 
-data_dir = "/home/dodd/google-drive/notebooks/IMEC V1 1550nm ring measurements/Thermal SOI ring cavity stability analysis"
-script_dir = "/home/dodd/google-drive/Documents/mathematica-scripts/"
+# os.environ['WolframKernel'] = '/usr/local/Wolfram/Mathematica/11.3/Executables/WolframKernel'
 mm_script_fname = "FixedPointSweep_mm_script.wls"
-mm_script_fpath = path.normpath(path.join(script_dir,mm_script_fname))
+os.environ['WolframKernel'] = '/usr/local/Wolfram/Mathematica/12.0/Executables/WolframKernel'
+hostname = socket.gethostname()
+if hostname=='dodd-laptop'
+    data_dir = "/home/dodd/google-drive/notebooks/IMEC V1 1550nm ring measurements/Thermal SOI ring cavity stability analysis"
+    script_dir = "/home/dodd/google-drive/Documents/mathematica-scripts/"
+    mm_script_fpath = path.normpath(path.join(script_dir,mm_script_fname))
+else: # assume I'm on a MTL server or something
+    home = str( Path.home() )
+    data_dir = home+'/data/'
+    script_dir = home+'/Wolfram Mathematica/'
+    this_dir = os.path.dirname(os.path.realpath(__file__))
+    local_wls_path = path.normpath(path.join(this_dir,mm_script_fname))
+    mm_script_fpath = path.normpath(path.join(script_dir,mm_script_fname))
+    shutil.copyfile(local_wls_path,mm_script_path)
+
+
 data_fname = 'test_data_fname.csv'
 base_mm_script_fname = 'FixedPointSweepSkeletonScript.wls'
 
-#, Sqrt[20], 2, 30., 1/5, 1/10, 30, 8, 1/10, 5
+def n_sig_figs(x,n):
+    return round(x, -int(floor(log10(abs(x)))) + (n - 1))
 
 params = {'Δ':np.arange(-130,20.25,0.25),
           's':np.arange(0,4,0.1),
@@ -36,10 +53,11 @@ params = {'Δ':np.arange(-130,20.25,0.25),
           'χ':5.}
 
 def run_mm_script(params=params,data_dir=data_dir,script_dir=script_dir,data_fname=data_fname):
-    Δ_max = params['Δ'].max()
-    Δ_min = params['Δ'].min()
-    d_Δ = params['Δ'][1] - params['Δ'][0]
-    arg_list = [data_dir,data_fname,Δ_min,Δ_max,d_Δ,params['s'],
+    Δ_max = int(round(params['Δ'].max()))
+    Δ_min = int(round(params['Δ'].min()))
+    # d_Δ = n_sig_figs(params['Δ'][1]-params['Δ'][0],2)
+    nΔ = len(params['Δ'])-1
+    arg_list = [data_dir,data_fname,Δ_min,Δ_max,nΔ,params['s'],
         params['γ'],params['μ'],params['r'],params['ζ'],
         params['τ_th'],params['η'],params['τ_fc'],params['χ']]
     cmd = [mm_script_fpath]+[f'{arg}' for arg in arg_list]
@@ -48,19 +66,59 @@ def run_mm_script(params=params,data_dir=data_dir,script_dir=script_dir,data_fna
 
 def run_mm_script_parallel(params=params):
     timestamp_str = datetime.strftime(datetime.now(),'%Y_%m_%d_%H_%M_%S')
-    Δ_max = params['Δ'].max()
-    Δ_min = params['Δ'].min()
-    d_Δ = params['Δ'][1] - params['Δ'][0]
+    Δ_max = int(round(params['Δ'].max()))
+    Δ_min = int(round(params['Δ'].min()))
+    # d_Δ = n_sig_figs(params['Δ'][1]-params['Δ'][0],2)
+    nΔ = len(params['Δ'])-1
     data_dir = params['data_dir']
     # data_fname = params['name'] + '_' + timestamp_str + '.csv'
     data_fname = params['name'] + '.csv'
-    arg_list = [data_dir,data_fname,Δ_min,Δ_max,d_Δ,params['s'],
+    arg_list = [data_dir,data_fname,Δ_min,Δ_max,nΔ,params['s'],
         params['γ'],params['μ'],params['r'],params['ζ'],
         params['τ_th'],params['η'],params['τ_fc'],params['χ']]
     cmd = [mm_script_fpath]+[f'{arg}' for arg in arg_list]
+    # print('Δ_max:' + str(Δ_max))
+    # print('Δ_min:' + str(Δ_min))
+    # print('d_Δ:' + str(d_Δ))
+    # print('cmd: ' + str(cmd))
     out = subp.run(cmd,check=True)
-    # return out.returncode
-    try:
+    return out.returncode
+    # # try:
+    # Pa_ss,Pb_ss = import_mm_data(path.join(data_dir,data_fname))
+    # a_ss,b_ss,n_ss,T_ss,eigvals_ss,det_j_ss,L_ss = jac_eigvals_sweep(Pa_ss,Pb_ss,**params)
+    # res = {'Pa':Pa_ss,
+    #         'Pb':Pb_ss,
+    #         'a':a_ss,
+    #         'b':b_ss,
+    #         'n':n_ss,
+    #         'T':T_ss,
+    #         'eigvals':eigvals_ss,
+    #         'det_j':det_j_ss,
+    #         'L':L_ss,
+    #         'mm_out':out,
+    # }
+    # return res
+    # # except:
+    # #     nΔ = len(params['Δ'])
+    # #     print('python processing fail, '+params['name'])
+    # #     res = {'Pa':np.zeros((nΔ,6),dtype=np.float64),
+    # #             'Pb':np.zeros((nΔ,6),dtype=np.float64),
+    # #             'a':np.zeros((nΔ,6),dtype=np.complex128),
+    # #             'b':np.zeros((nΔ,6),dtype=np.complex128),
+    # #             'n':np.zeros((nΔ,6),dtype=np.float64),
+    # #             'T':np.zeros((nΔ,6),dtype=np.float64),
+    # #             'eigvals':np.zeros((nΔ,6,6),dtype=np.complex128),
+    # #             'det_j':np.zeros((nΔ,6),dtype=np.float64),
+    # #             'L':np.zeros((nΔ,6),dtype=np.float64),
+    # #             'mm_out':out,
+    # #     }
+    # # return res
+
+def process_mm_data_parallel(params=params):
+    data_dir = params['data_dir']
+    data_fname = params['name'] + '.csv'
+    data_fpath = path.normpath(path.join(data_dir,data_fname))
+    if path.exists(data_fpath):
         Pa_ss,Pb_ss = import_mm_data(path.join(data_dir,data_fname))
         a_ss,b_ss,n_ss,T_ss,eigvals_ss,det_j_ss,L_ss = jac_eigvals_sweep(Pa_ss,Pb_ss,**params)
         res = {'Pa':Pa_ss,
@@ -72,11 +130,11 @@ def run_mm_script_parallel(params=params):
                 'eigvals':eigvals_ss,
                 'det_j':det_j_ss,
                 'L':L_ss,
-                'mm_out':out,
+                # 'mm_out':out,
         }
-    except:
+    else:
         nΔ = len(params['Δ'])
-        print('python processing fail, '+params['name'])
+        print('no file found, '+params['name'])
         res = {'Pa':np.zeros((nΔ,6),dtype=np.float64),
                 'Pb':np.zeros((nΔ,6),dtype=np.float64),
                 'a':np.zeros((nΔ,6),dtype=np.complex128),
@@ -87,26 +145,8 @@ def run_mm_script_parallel(params=params):
                 'det_j':np.zeros((nΔ,6),dtype=np.float64),
                 'L':np.zeros((nΔ,6),dtype=np.float64),
                 'mm_out':out,
-        }
+            }
     return res
-
-# def process_mm_data_parallel(params=params):
-#     data_dir = params['data_dir']
-#     data_fname = params['name'] + '.csv'
-#     Pa_ss,Pb_ss = import_mm_data(path.join(data_dir,data_fname))
-#     a_ss,b_ss,n_ss,T_ss,eigvals_ss,det_j_ss,L_ss = jac_eigvals_sweep(Pa_ss,Pb_ss,**params)
-#     res = {'Pa':Pa_ss,
-#             'Pb':Pb_ss,
-#             'a':a_ss,
-#             'b':b_ss,
-#             'n':n_ss,
-#             'T':T_ss,
-#             'eigvals':eigvals_ss,
-#             'det_j':det_j_ss,
-#             'L':L_ss,
-#             'mm_out':out,
-#     }
-#     return res
 
 def process_mm_data_line(line,ncol=12):
     line_proc = line.replace('{Pa -> ','').replace('Pb -> ','').replace('}','').replace('"','').replace('*^','e')
@@ -354,9 +394,7 @@ def Vrb2η(V_rb,λ=1.55*u.um):
     η = ( ( q * V_rb + 2 * E_ph ) / ( 2 * E_ph) ).to(u.dimensionless).m
     return η
 
-from math import log10, floor
-def n_sig_figs(x,n):
-    return round(x, -int(floor(log10(abs(x)))) + (n - 1))
+
 
 # default parameter dictionaries for exp2norm_params defined below
 p_si = {
@@ -421,7 +459,7 @@ def expt2norm_params(p_expt=p_expt_def,p_mat=p_si,verbose=True):
     # mathematica solver Parameters
     n_sf = p_expt['n_sf'] # number of significant figures to leave in the normalized parameters passed to mathematica. the fewer, the faster
     δs = p_expt['δs'] # s step size (sqrt normalized input power)
-    δΔ = p_expt['δΔ'] # Δ step size (cold cavity detuning)
+    δΔ = n_sig_figs(p_expt['δΔ'],2) # Δ step size (cold cavity detuning)
     # p_mat
     r = p_mat['r']
     γ = p_mat['γ']
@@ -473,7 +511,7 @@ def expt2norm_params(p_expt=p_expt_def,p_mat=p_si,verbose=True):
     #### normalized input power range ####
     I_bus_max = P_bus_max / A
     s_max = int( np.ceil( 10 * ( np.sqrt( I_bus_max) / ξ_in ).to(u.dimensionless).m ) ) / 10.
-    s = np.arange(0,s_max,δs)
+    s = np.arange(δs,s_max,δs)
     P_bus = ( ( s * ξ_in )**2 * A ).to(u.mW)
 
 
@@ -632,22 +670,8 @@ def compute_PVΔ_sweep(p_expt=p_expt_def,p_mat=p_si,sweep_name='test',nEq=6,n_pr
             # a_ss,b_ss,n_ss,T_ss,eigvals_ss,det_j_ss,L_ss = jac_eigvals_sweep(Pa_ss,Pb_ss,**V_params_ss)
         # map function onto pool of mathematica processes
         with Pool(processes=n_proc) as pool:
-            res = pool.map(run_mm_script_parallel,V_params_ss_list)
-
-            # out = pool.map(run_mm_script_parallel,V_params_ss_list)
-            # res = pool.map(process_mm_data_parallel,V_params_ss_list)
-
-            # res[ind] = {'Pa':Pa_ss,
-            #         'Pb':Pb_ss,
-            #         'a':a_ss,
-            #         'b':b_ss,
-            #         'n':n_ss,
-            #         'T':T_ss,
-            #         'eigvals':eigvals_ss,
-            #         'det_j':det_j_ss,
-            #         'L':L_ss,
-            #         'mm_out':out,
-            # }
+            out = pool.map(run_mm_script_parallel,V_params_ss_list)
+            res = pool.map(process_mm_data_parallel,V_params_ss_list)
         # fill in dataset arrays, creating them first if Vind==0
         if Vind==0:
             Pa = np.zeros((ns,nV,nΔ,nEq),dtype=np.float64)

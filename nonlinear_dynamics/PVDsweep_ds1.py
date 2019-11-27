@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
-import sys
-mm_dir = "/home/dodd/google-drive/notebooks/IMEC V1 1550nm ring measurements/Thermal SOI ring cavity stability analysis"
-# import my MM data load library
-if mm_dir not in sys.path:
-    sys.path.append(mm_dir)
-import os
-os.environ['WolframKernel'] = '/usr/local/Wolfram/Mathematica/12.0/Executables/WolframKernel'
+# import sys
+# mm_dir = "/home/dodd/google-drive/notebooks/IMEC V1 1550nm ring measurements/Thermal SOI ring cavity stability analysis"
+# # import my MM data load library
+# if mm_dir not in sys.path:
+#     sys.path.append(mm_dir)
+# import os
+# os.environ['WolframKernel'] = '/usr/local/Wolfram/Mathematica/12.0/Executables/WolframKernel'
 import FixedPointSweep as fps
 from instrumental import u
 import numpy as np
@@ -70,25 +70,26 @@ p_expt1 = {
 }
 
 
-for tind,tt in enumerate(τ_th_list):
-    if tind > 1:
-        p0 = p_expt0.copy()
-        p0['τ_th'] = tt
-        p1 = p_expt1.copy()
-        p1['τ_th'] = tt
+if __name__ == '__main__':
+    for tind,tt in enumerate(τ_th_list):
+        if tind > 1:
+            p0 = p_expt0.copy()
+            p0['τ_th'] = tt
+            p1 = p_expt1.copy()
+            p1['τ_th'] = tt
 
-        fps.compute_PVΔ_sweep(p_expt=p0,
-                            p_mat=p_si,
-                            sweep_name=f'ds1_p0_tau{tind}',
-                            data_dir=mm_dir,
-                            verbose=True,
-                            return_data=False,
-                            )
+            fps.compute_PVΔ_sweep(p_expt=p0,
+                                p_mat=p_si,
+                                sweep_name=f'ds1_p0_tau{tind}',
+                                data_dir=mm_dir,
+                                verbose=True,
+                                return_data=False,
+                                )
 
-        fps.compute_PVΔ_sweep(p_expt=p1,
-                            p_mat=p_si,
-                            sweep_name=f'ds1_p1_tau{tind}',
-                            data_dir=mm_dir,
-                            verbose=True,
-                            return_data=False,
-                            )
+            fps.compute_PVΔ_sweep(p_expt=p1,
+                                p_mat=p_si,
+                                sweep_name=f'ds1_p1_tau{tind}',
+                                data_dir=mm_dir,
+                                verbose=True,
+                                return_data=False,
+                                )
