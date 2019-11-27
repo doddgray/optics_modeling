@@ -149,7 +149,7 @@ def process_mm_data_parallel(params=params):
                 'eigvals':np.zeros((nΔ,6,6),dtype=np.complex128),
                 'det_j':np.zeros((nΔ,6),dtype=np.float64),
                 'L':np.zeros((nΔ,6),dtype=np.float64),
-                'mm_out':out,
+                # 'mm_out':out,
             }
     return res
 
