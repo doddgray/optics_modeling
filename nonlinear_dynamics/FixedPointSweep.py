@@ -21,7 +21,7 @@ import shutil
 mm_script_fname = "FixedPointSweep_mm_script.wls"
 os.environ['WolframKernel'] = '/usr/local/Wolfram/Mathematica/12.0/Executables/WolframKernel'
 hostname = socket.gethostname()
-if hostname=='dodd-laptop'
+if hostname=='dodd-laptop':
     data_dir = "/home/dodd/google-drive/notebooks/IMEC V1 1550nm ring measurements/Thermal SOI ring cavity stability analysis"
     script_dir = "/home/dodd/google-drive/Documents/mathematica-scripts/"
     mm_script_fpath = path.normpath(path.join(script_dir,mm_script_fname))
