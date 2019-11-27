@@ -34,8 +34,8 @@ else: # assume I'm on a MTL server or something
     this_dir = os.path.dirname(os.path.realpath(__file__))
     local_wls_path = path.normpath(path.join(this_dir,mm_script_fname))
     mm_script_fpath = path.normpath(path.join(script_dir,mm_script_fname))
-    shutil.copyfile(local_wls_path,mm_script_fpath)
-    chmod(mm_script_fpath, 777)
+    # shutil.copyfile(local_wls_path,mm_script_fpath)
+    # chmod(mm_script_fpath, 777)
     n_proc_def = 32
 
 
