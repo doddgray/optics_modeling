@@ -11,8 +11,7 @@ import FixedPointSweep as fps
 from instrumental import u
 import numpy as np
 
-home = fps.data_dir
-
+data_dir = fps.data_dir
 
 p_si = {
     'r': 0.189, # nonlinear refraction 2π * n_2 / λ
