@@ -17,6 +17,8 @@ from math import log10, floor
 import socket
 from pathlib import Path
 import shutil
+from pebble import ProcessPool
+from concurrent.futures import TimeoutError
 
 # os.environ['WolframKernel'] = '/usr/local/Wolfram/Mathematica/11.3/Executables/WolframKernel'
 mm_script_fname = "FixedPointSweep_mm_script.wls"
@@ -38,7 +40,7 @@ else: # assume I'm on a MTL server or something
     mm_script_fpath = path.normpath(path.join(script_dir,mm_script_fname))
     # shutil.copyfile(local_wls_path,mm_script_fpath)
     # chmod(mm_script_fpath, 777)
-    n_proc_def = 32
+    n_proc_def = 30
 
 
 data_fname = 'test_data_fname.csv'
@@ -618,7 +620,7 @@ def expt2norm_params(p_expt=p_expt_def,p_mat=p_si,verbose=True):
 ################################################################################
 
 
-def compute_PVΔ_sweep(p_expt=p_expt_def,p_mat=p_si,sweep_name='test',nEq=6,n_proc=8,data_dir=data_dir,verbose=True,return_data=False):
+def compute_PVΔ_sweep(p_expt=p_expt_def,p_mat=p_si,sweep_name='test',nEq=6,n_proc=n_proc_def,data_dir=data_dir,verbose=True,return_data=False):
     """
     Find steady state solutions and corresponding Jacobian eigenvalues
     for the specified normalized 2-mode+free-carrier+thermal microring model
@@ -683,6 +685,19 @@ def compute_PVΔ_sweep(p_expt=p_expt_def,p_mat=p_si,sweep_name='test',nEq=6,n_pr
         with Pool(processes=n_proc) as pool:
             out = pool.map(run_mm_script_parallel,V_params_ss_list)
             res = pool.map(process_mm_data_parallel,V_params_ss_list)
+        # with ProcessPool(max_workers=n_proc, max_tasks=n_proc) as pool:
+        #     out = pool.map(run_mm_script_parallel,V_params_ss_list)
+        #     res = pool.map(process_mm_data_parallel,V_params_ss_list)
+        #     future = pool.map(sometimes_stalling_processing, dataset, timeout=10)
+        #     iterator = future.result()
+        #     while True:
+        #         try:
+        #             result = next(iterator)
+        #         except StopIteration:
+        #             break
+        #         except TimeoutError as error:
+        #             print("function took longer than %d seconds" % error.args[1])
+
         # fill in dataset arrays, creating them first if Vind==0
         if Vind==0:
             Pa = np.zeros((ns,nV,nΔ,nEq),dtype=np.float64)
