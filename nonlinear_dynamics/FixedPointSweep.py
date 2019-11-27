@@ -25,6 +25,7 @@ if hostname=='dodd-laptop'
     data_dir = "/home/dodd/google-drive/notebooks/IMEC V1 1550nm ring measurements/Thermal SOI ring cavity stability analysis"
     script_dir = "/home/dodd/google-drive/Documents/mathematica-scripts/"
     mm_script_fpath = path.normpath(path.join(script_dir,mm_script_fname))
+    n_proc_def = 8
 else: # assume I'm on a MTL server or something
     home = str( Path.home() )
     data_dir = home+'/data/'
@@ -33,6 +34,7 @@ else: # assume I'm on a MTL server or something
     local_wls_path = path.normpath(path.join(this_dir,mm_script_fname))
     mm_script_fpath = path.normpath(path.join(script_dir,mm_script_fname))
     shutil.copyfile(local_wls_path,mm_script_path)
+    n_proc_def = 32
 
 
 data_fname = 'test_data_fname.csv'
@@ -607,7 +609,7 @@ def expt2norm_params(p_expt=p_expt_def,p_mat=p_si,verbose=True):
 ################################################################################
 
 
-def compute_PVΔ_sweep(p_expt=p_expt_def,p_mat=p_si,sweep_name='test',nEq=6,n_proc=8,data_dir=data_dir,verbose=True,return_data=False):
+def compute_PVΔ_sweep(p_expt=p_expt_def,p_mat=p_si,sweep_name='test',nEq=6,n_proc=n_proc_def,data_dir=data_dir,verbose=True,return_data=False):
     """
     Find steady state solutions and corresponding Jacobian eigenvalues
     for the specified normalized 2-mode+free-carrier+thermal microring model
