@@ -11,6 +11,9 @@ import FixedPointSweep as fps
 from instrumental import u
 import numpy as np
 
+home = fps.data_dir
+
+
 p_si = {
     'r': 0.189, # nonlinear refraction 2π * n_2 / λ
     'γ': 3.1e-9 * u.cm/u.watt, # nonlinear refraction 2π * n_2 / λ,
@@ -81,7 +84,7 @@ if __name__ == '__main__':
             fps.compute_PVΔ_sweep(p_expt=p0,
                                 p_mat=p_si,
                                 sweep_name=f'ds1_p0_tau{tind}',
-                                data_dir=mm_dir,
+                                data_dir=data_dir,
                                 verbose=True,
                                 return_data=False,
                                 )
@@ -89,7 +92,7 @@ if __name__ == '__main__':
             fps.compute_PVΔ_sweep(p_expt=p1,
                                 p_mat=p_si,
                                 sweep_name=f'ds1_p1_tau{tind}',
-                                data_dir=mm_dir,
+                                data_dir=data_dir,
                                 verbose=True,
                                 return_data=False,
                                 )
