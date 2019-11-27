@@ -35,8 +35,8 @@ else: # assume I'm on a MTL server or something
     local_wls_path = path.normpath(path.join(this_dir,mm_script_fname))
     mm_script_fpath = path.normpath(path.join(script_dir,mm_script_fname))
     shutil.copyfile(local_wls_path,mm_script_fpath)
-    chmod(path, stat.S_IRWXU)
-    chmod(path, stat.S_IRWXO)
+    chmod(mm_script_fpath, stat.S_IRWXU)
+    chmod(mm_script_fpath, stat.S_IRWXO)
     n_proc_def = 32
 
 
