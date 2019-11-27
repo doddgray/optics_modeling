@@ -74,7 +74,7 @@ p_expt1 = {
 
 if __name__ == '__main__':
     for tind,tt in enumerate(τ_th_list):
-        if tind > 1:
+        if tind > 2:
             p0 = p_expt0.copy()
             p0['τ_th'] = tt
             p1 = p_expt1.copy()
