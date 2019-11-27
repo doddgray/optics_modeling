@@ -20,17 +20,19 @@ import shutil
 
 # os.environ['WolframKernel'] = '/usr/local/Wolfram/Mathematica/11.3/Executables/WolframKernel'
 mm_script_fname = "FixedPointSweep_mm_script.wls"
-os.environ['WolframKernel'] = '/usr/local/Wolfram/Mathematica/12.0/Executables/WolframKernel'
+
 hostname = socket.gethostname()
 if hostname=='dodd-laptop':
     data_dir = "/home/dodd/google-drive/notebooks/IMEC V1 1550nm ring measurements/Thermal SOI ring cavity stability analysis"
     script_dir = "/home/dodd/google-drive/Documents/mathematica-scripts/"
     mm_script_fpath = path.normpath(path.join(script_dir,mm_script_fname))
+    os.environ['WolframKernel'] = '/usr/local/Wolfram/Mathematica/12.0/Executables/WolframKernel'
     n_proc_def = 8
 else: # assume I'm on a MTL server or something
     home = str( Path.home() )
     data_dir = home+'/data/'
     script_dir = home+'/Wolfram Mathematica/'
+    os.environ['WolframKernel'] = '/opt/wolfram/Mathematica/12.0/Executables/WolframKernel'
     this_dir = os.path.dirname(os.path.realpath(__file__))
     local_wls_path = path.normpath(path.join(this_dir,mm_script_fname))
     mm_script_fpath = path.normpath(path.join(script_dir,mm_script_fname))
