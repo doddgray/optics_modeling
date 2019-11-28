@@ -51,11 +51,11 @@ p_expt = {
     'δΔ': 0.2,  # Δ step size (cold cavity detuning)
 }
 
-tind_min=0 # in case you need to restart in the middle after a crash
+tind_start=0 # in case you need to restart in the middle after a crash
 
 if __name__ == '__main__':
     for tind,tt in enumerate(τ_th_list):
-        if tind > tind_min:
+        if tind >= tind_start:
             p = p_expt.copy()
             p['τ_th'] = tt
 
