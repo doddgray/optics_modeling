@@ -46,7 +46,7 @@ p_expt = {
     'n_sf': 3, # number of significant figures to leave in the normalized parameters passed to mathematica. the fewer, the faster
     'δs': 0.2, # s step size (sqrt normalized input power)
     'δΔ': 0.2,  # Δ step size (cold cavity detuning)
-    'dΔdt': 1e-4,
+    'dΔdt': 1e-3,
 }
 
 tind_start=0 # in case you need to restart in the middle after a crash

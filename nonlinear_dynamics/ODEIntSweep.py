@@ -114,7 +114,7 @@ def f_tuning(t,y,p,dΔdt):
     d_T = -T / τ_th + ζ * ( η * r * ( (a_c*a_c_star)**2 + (a_s*a_s_star)**2 ) + n / μ * ( (a_c*a_c_star) + (a_s*a_s_star) ) )
     return [d_Δ, d_a_c, d_a_c_star, d_a_s, d_a_s_star , d_n, d_T]
 
-def jac_tuning(t,y,p):
+def jac_tuning(t,y,p,dΔdt):
     # not yet fixed to incorporate tuning, don't use
     # unpack paramater dict "p"
     Δ = p['Δ']
@@ -127,15 +127,16 @@ def jac_tuning(t,y,p):
     χ = p['χ']
     τ_fc = p['τ_fc']
     τ_th = p['τ_th']
-    dΔdt = p['dΔdt']
-    a_c, a_c_star, a_s, a_s_star, n, T = y
-    d_d_a_c = [ ( ( -0.5 + 1j*Δ + 1j*δ_r/2.0) + ( -1/μ - 1j ) * n + 2 * (1j - r) * (a_c * a_c_star) + 1j*T ), (1j - r) * a_c**2, 0, 0, ( -1/μ - 1j )*a_c, 1j*T*a_c ]
-    d_d_a_c_star = [ (-1j - r) * a_c_star**2, np.conjugate( ( -0.5 + 1j*Δ + 1j*δ_r/2.0) + ( -1/μ - 1j ) * n + 2 * (1j - r) * (a_c * a_c_star) + 1j*T ), 0, 0, ( -1/μ + 1j )*a_c_star, -1j*T*a_c_star ]
-    d_d_a_s = [ 0, 0, ( ( -0.5 + 1j*Δ - 1j*δ_r/2.0) + ( -1/μ - 1j ) * n + 2 * (1j - r) * (a_s * a_s_star) + 1j*T ), (1j - r) * a_s**2, ( -1/μ - 1j )*a_s, 1j*T*a_s ]
-    d_d_a_s_star = [ 0, 0, (-1j - r) * a_s_star**2, np.conjugate( ( -0.5 + 1j*Δ - 1j*δ_r/2.0) + ( -1/μ - 1j ) * n + 2 * (1j - r) * (a_s * a_s_star) + 1j*T ), ( -1/μ + 1j )*a_s_star, -1j*T*a_s_star ]
-    d_d_n = [ 2 * χ * a_c_star**2 * a_c , 2 * χ * a_c**2 * a_c_star , 2 * χ * a_s_star**2 * a_s , 2 * χ * a_s**2 * a_s_star , -1/τ_fc, 0 ]
-    d_d_T = [ ζ*(2*η*r*a_c_star**2*a_c + n/μ*a_c_star) , ζ*(2*η*r*a_c_star*a_c**2 + n/μ*a_c) , ζ*(2*η*r*a_s_star**2*a_s + n/μ*a_s_star) , ζ*(2*η*r*a_s_star*a_s**2 + n/μ*a_s), ζ/μ * ( (a_c*a_c_star) + (a_s*a_s_star) ), -1./τ_th ]
-    return [d_d_a_c, d_d_a_c_star, d_d_a_s, d_d_a_s_star, d_d_n, d_d_T]
+    # dΔdt = p['dΔdt']
+    Δ, a_c, a_c_star, a_s, a_s_star, n, T = y
+    d_d_Δ = [ 0., 0., 0., 0., 0., 0., 0.]
+    d_d_a_c = [ 0., ( ( -0.5 + 1j*Δ + 1j*δ_r/2.0) + ( -1/μ - 1j ) * n + 2 * (1j - r) * (a_c * a_c_star) + 1j*T ), (1j - r) * a_c**2, 0, 0, ( -1/μ - 1j )*a_c, 1j*T*a_c ]
+    d_d_a_c_star = [ 0., (-1j - r) * a_c_star**2, np.conjugate( ( -0.5 + 1j*Δ + 1j*δ_r/2.0) + ( -1/μ - 1j ) * n + 2 * (1j - r) * (a_c * a_c_star) + 1j*T ), 0, 0, ( -1/μ + 1j )*a_c_star, -1j*T*a_c_star ]
+    d_d_a_s = [ 0., 0, 0, ( ( -0.5 + 1j*Δ - 1j*δ_r/2.0) + ( -1/μ - 1j ) * n + 2 * (1j - r) * (a_s * a_s_star) + 1j*T ), (1j - r) * a_s**2, ( -1/μ - 1j )*a_s, 1j*T*a_s ]
+    d_d_a_s_star = [ 0., 0, 0, (-1j - r) * a_s_star**2, np.conjugate( ( -0.5 + 1j*Δ - 1j*δ_r/2.0) + ( -1/μ - 1j ) * n + 2 * (1j - r) * (a_s * a_s_star) + 1j*T ), ( -1/μ + 1j )*a_s_star, -1j*T*a_s_star ]
+    d_d_n = [ 0., 2 * χ * a_c_star**2 * a_c , 2 * χ * a_c**2 * a_c_star , 2 * χ * a_s_star**2 * a_s , 2 * χ * a_s**2 * a_s_star , -1/τ_fc, 0 ]
+    d_d_T = [ 0., ζ*(2*η*r*a_c_star**2*a_c + n/μ*a_c_star) , ζ*(2*η*r*a_c_star*a_c**2 + n/μ*a_c) , ζ*(2*η*r*a_s_star**2*a_s + n/μ*a_s_star) , ζ*(2*η*r*a_s_star*a_s**2 + n/μ*a_s), ζ/μ * ( (a_c*a_c_star) + (a_s*a_s_star) ), -1./τ_th ]
+    return [d_d_Δ, d_d_a_c, d_d_a_c_star, d_d_a_s, d_d_a_s_star, d_d_n, d_d_T]
 
 
 
@@ -396,7 +397,7 @@ def ODEInt_Dsweep_trace(p):
                             t_span=t_span,
                             y0=y0_b2r,
                             method='BDF',
-                            # jac=lambda t, y: jac_DrivenCavity(t, y, ss, DD),
+                            jac=lambda t, y: jac_tuning(t, y, p, -p['dΔdt']),
                            )
     with open(fpath_b2r, 'wb') as f:
         pickle.dump(sol_b2r, f,fix_imports=True,protocol=pickle.HIGHEST_PROTOCOL)
@@ -404,7 +405,7 @@ def ODEInt_Dsweep_trace(p):
                             t_span=t_span,
                             y0=y0_r2b,
                             method='BDF',
-                            # jac=lambda t, y: jac_DrivenCavity(t, y, ss, DD),
+                            jac=lambda t, y: jac_tuning(t, y, p, p['dΔdt']),
                            )
     with open(fpath_r2b, 'wb') as f:
         pickle.dump(sol_r2b, f,fix_imports=True,protocol=pickle.HIGHEST_PROTOCOL)
