@@ -649,7 +649,7 @@ def compute_PVΔ_sweep(p_expt=p_expt_def,p_mat=p_si,sweep_name='test',nEq=6,n_pr
     metadata['nV'] = nV
     t_start = time()
     start_timestamp_str = datetime.strftime(datetime.now(),'%Y_%m_%d_%H_%M_%S')
-    metadata['t_start'] = start_timestamp_str'
+    metadata['t_start'] = start_timestamp_str
     params_list = []
     with open(mfpath, 'wb') as f:
         pickle.dump(metadata,f)
