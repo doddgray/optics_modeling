@@ -47,7 +47,7 @@ p_expt = {
     'δs': 0.4, # s step size (sqrt normalized input power)
     'δΔ': 0.2,  # Δ step size (cold cavity detuning)
     'τ_th_norm_ζ_product': 4.5,  # τ_th_norm * ζ, inferred from experiment data
-    'dΔdt': 1e-3,
+    'dΔdt': 3e-3,
 }
 
 tind_start=0 # in case you need to restart in the middle after a crash
