@@ -396,20 +396,20 @@ def ODEInt_Dsweep_trace(p):
     sol_b2r = solve_ivp(fun=lambda t, y: f_tuning(t, y, p, -p['dΔdt']),
                             t_span=t_span,
                             y0=y0_b2r,
-                            method='RK45', #'BDF',
+                            method='BDF',
                             # min_step=0.1,
                             max_step=3,
-                            # jac=lambda t, y: jac_tuning(t, y, p, -p['dΔdt']),
+                            jac=lambda t, y: jac_tuning(t, y, p, -p['dΔdt']),
                            )
     with open(fpath_b2r, 'wb') as f:
         pickle.dump(sol_b2r, f,fix_imports=True,protocol=pickle.HIGHEST_PROTOCOL)
     sol_r2b = solve_ivp(fun=lambda t, y: f_tuning(t, y, p, p['dΔdt']),
                             t_span=t_span,
                             y0=y0_r2b,
-                            method='RK45', #'BDF',
+                            method='BDF',
                             # min_step=0.1,
                             max_step=3,
-                            # jac=lambda t, y: jac_tuning(t, y, p, p['dΔdt']),
+                            jac=lambda t, y: jac_tuning(t, y, p, p['dΔdt']),
                            )
     with open(fpath_r2b, 'wb') as f:
         pickle.dump(sol_r2b, f,fix_imports=True,protocol=pickle.HIGHEST_PROTOCOL)
@@ -441,6 +441,7 @@ def collect_ODEInt_PVΔ_sweep(p_expt=p_expt_def,p_mat=p_si,sweep_name='test',nEq
     metadata['t_start'] = start_timestamp_str
     with open(mfpath, 'wb') as f:
         pickle.dump(metadata,f)
+    params_list = []
     for Vind, VV in enumerate(p_expt['V_rb']):
         V_dir_name = f'V{Vind}'
         V_dir = path.normpath(path.join(sweep_dir,V_dir_name))
@@ -477,12 +478,15 @@ def collect_ODEInt_PVΔ_sweep(p_expt=p_expt_def,p_mat=p_si,sweep_name='test',nEq
             # ss_fname = f's{sind}_' + timestamp_str + '.csv'
             V_params_ss_list[sind]['name'] = f's{sind}'
             V_params_ss_list[sind]['data_dir'] = V_dir
+            params_list.append(V_params_ss_list[sind])
             # run_mm_script(params=V_params_ss,data_dir=V_dir,data_fname=ss_fname)
             # Pa_ss,Pb_ss = import_mm_data(path.join(V_dir,ss_fname))
             # a_ss,b_ss,n_ss,T_ss,eigvals_ss,det_j_ss,L_ss = jac_eigvals_sweep(Pa_ss,Pb_ss,**V_params_ss)
         # map function onto pool of mathematica processes
-        with Pool(processes=n_proc) as pool:
-            res = pool.map(ODEInt_Dsweep_trace,V_params_ss_list)
+        # with Pool(processes=n_proc) as pool:
+        #     res = pool.map(ODEInt_Dsweep_trace,V_params_ss_list)
+    with Pool(processes=n_proc) as pool:
+        res = pool.map(ODEInt_Dsweep_trace,params_list)
             # res = pool.map(process_mm_data_parallel,V_params_ss_list)
         # # fill in dataset arrays, creating them first if Vind==0
         # if Vind==0:
