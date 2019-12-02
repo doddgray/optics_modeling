@@ -383,7 +383,7 @@ def ODEInt_Dsweep_trace(p):
 
     Δ0_b2r = p['Δ_max_norm']
     Δ0_r2b = p['Δ_min_norm']
-    t_max = (Δ0_b2r - Δ0_b2r) / p['dΔdt']
+    t_max = (Δ0_b2r - Δ0_r2b) / p['dΔdt']
     a_0 = b_0 = 0.0 + 0.0j
     a_star_0 = b_star_0 = np.conjugate(a_0)
     n0 = 0.0
