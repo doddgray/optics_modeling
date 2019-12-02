@@ -22,7 +22,7 @@ p_si = {
 }
 
 τ_th_list = np.array([30,100,300,1000])*u.ns
-V_rb = np.concatenate((np.arange(0,3,0.5),np.arange(4,24,4)))*u.volt
+V_rb = np.concatenate((np.arange(0,3,0.5),np.arange(4,24,6)))*u.volt
 
 p_expt = {
     'λ': 1.55 * u.um, # free space laser wavelength
@@ -44,7 +44,7 @@ p_expt = {
     'A': 0.1 * u.um**2, # mode effective area, from mode solver
     'β_2': 2 * u.ps**2/u.m, # GVD roughly measured, expected to be ~ 1 ps^2 / m
     'n_sf': 3, # number of significant figures to leave in the normalized parameters passed to mathematica. the fewer, the faster
-    'δs': 0.2, # s step size (sqrt normalized input power)
+    'δs': 0.4, # s step size (sqrt normalized input power)
     'δΔ': 0.2,  # Δ step size (cold cavity detuning)
     'dΔdt': 1e-2,
 }

@@ -399,7 +399,7 @@ def ODEInt_Dsweep_trace(p):
                             method='RK45', #'BDF',
                             # min_step=0.1,
                             max_step=3,
-                            jac=lambda t, y: jac_tuning(t, y, p, -p['dΔdt']),
+                            # jac=lambda t, y: jac_tuning(t, y, p, -p['dΔdt']),
                            )
     with open(fpath_b2r, 'wb') as f:
         pickle.dump(sol_b2r, f,fix_imports=True,protocol=pickle.HIGHEST_PROTOCOL)
@@ -409,7 +409,7 @@ def ODEInt_Dsweep_trace(p):
                             method='RK45', #'BDF',
                             # min_step=0.1,
                             max_step=3,
-                            jac=lambda t, y: jac_tuning(t, y, p, p['dΔdt']),
+                            # jac=lambda t, y: jac_tuning(t, y, p, p['dΔdt']),
                            )
     with open(fpath_r2b, 'wb') as f:
         pickle.dump(sol_r2b, f,fix_imports=True,protocol=pickle.HIGHEST_PROTOCOL)
