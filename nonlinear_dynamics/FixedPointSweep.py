@@ -695,8 +695,8 @@ def compute_PVΔ_sweep(p_expt=p_expt_def,p_mat=p_si,sweep_name='test',nEq=6,n_pr
         #     out = pool.map(run_mm_script_parallel,V_params_ss_list)
         #     res = pool.map(process_mm_data_parallel,V_params_ss_list)
     with Pool(processes=n_proc) as pool:
-        out = pool.map(run_mm_script_parallel,V_params_ss_list)
-        res = pool.map(process_mm_data_parallel,V_params_ss_list)
+        out = pool.map(run_mm_script_parallel,params_list)
+        res = pool.map(process_mm_data_parallel,params_list)
         # with ProcessPool(max_workers=n_proc, max_tasks=n_proc) as pool:
         #     out = pool.map(run_mm_script_parallel,V_params_ss_list)
         #     res = pool.map(process_mm_data_parallel,V_params_ss_list)
