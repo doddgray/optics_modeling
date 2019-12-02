@@ -439,6 +439,7 @@ p_expt_def = {
     'n_sf': 2, # number of significant figures to leave in the normalized parameters passed to mathematica. the fewer, the faster
     'δs': 0.05, # s step size (sqrt normalized input power)
     'δΔ': 0.2,  # Δ step size (cold cavity detuning)
+    'τ_th_norm_ζ_product': 4.5,  # τ_th_norm * ζ, inferred from experiment data
 }
 
 def expt2norm_params(p_expt=p_expt_def,p_mat=p_si,verbose=True):
@@ -469,6 +470,7 @@ def expt2norm_params(p_expt=p_expt_def,p_mat=p_si,verbose=True):
     A = p_expt['A']
     splitting = p_expt['splitting']
     β_2 = p_expt['β_2']
+    τ_th_norm_ζ_product = p_expt['τ_th_norm_ζ_product']
     # mathematica solver Parameters
     n_sf = p_expt['n_sf'] # number of significant figures to leave in the normalized parameters passed to mathematica. the fewer, the faster
     δs = p_expt['δs'] # s step size (sqrt normalized input power)
@@ -505,7 +507,9 @@ def expt2norm_params(p_expt=p_expt_def,p_mat=p_si,verbose=True):
     τ_th_norm = (τ_th/τ_ph).to(u.dimensionless).m
     dneff_dT = -(n_g * df_dT * 2 * π / ω_l).to(1/u.degK)
     δ_T = ( ( ω_l / c ) * dneff_dT ).to(1/u.cm/u.degK) # δ_T = dβ/dT = (ω/c)*dneff/dT
-    ζ = (δ_T / ( 2 * c_v * γ * v_g )).to(u.dimensionless).m
+    ζ_mode_volume = (δ_T / ( 2 * c_v * γ * v_g )).to(u.dimensionless).m
+    ζ = τ_th_norm_ζ_product / τ_th_norm
+    heat_capacity_volume_ratio = ζ_mode_volume / ζ
     # FC generation rate per |a|^4
     χ = ( ( r * μ * σ ) / ( 2 * E_ph * γ * v_g ) ).to(u.dimensionless).m
 
@@ -542,6 +546,8 @@ def expt2norm_params(p_expt=p_expt_def,p_mat=p_si,verbose=True):
     p_expt['τ_fc_norm'] = τ_fc_norm
     p_expt['τ_th_norm'] = τ_th_norm
     p_expt['ζ'] = ζ
+    p_expt['ζ_mode_volume'] = ζ_mode_volume
+    p_expt['heat_capacity_volume_ratio'] = heat_capacity_volume_ratio
     p_expt['χ'] = χ
     p_expt['E_ph'] = E_ph
     p_expt['δ_T'] = δ_T
@@ -568,6 +574,7 @@ def expt2norm_params(p_expt=p_expt_def,p_mat=p_si,verbose=True):
         print(f"τ_fc_norm: {τ_fc_norm:1.3g}")
         print(f"τ_th_norm: {τ_th_norm:1.3g}")
         print(f"ζ: {ζ:1.3g}")
+        print(f"heat_capacity_volume_ratio: {heat_capacity_volume_ratio:1.3g}")
         print(f"χ: {χ:1.3g}")
 
         print(f"τ_fc: {τ_fc:1.3g}")
@@ -642,7 +649,8 @@ def compute_PVΔ_sweep(p_expt=p_expt_def,p_mat=p_si,sweep_name='test',nEq=6,n_pr
     metadata['nV'] = nV
     t_start = time()
     start_timestamp_str = datetime.strftime(datetime.now(),'%Y_%m_%d_%H_%M_%S')
-    metadata['t_start'] = start_timestamp_str
+    metadata['t_start'] = start_timestamp_str'
+    params_list = []
     with open(mfpath, 'wb') as f:
         pickle.dump(metadata,f)
     for Vind, VV in enumerate(p_expt['V_rb']):
@@ -678,13 +686,17 @@ def compute_PVΔ_sweep(p_expt=p_expt_def,p_mat=p_si,sweep_name='test',nEq=6,n_pr
             # ss_fname = f's{sind}_' + timestamp_str + '.csv'
             V_params_ss_list[sind]['name'] = f's{sind}'
             V_params_ss_list[sind]['data_dir'] = V_dir
+            params_list.append(V_params_ss_list[sind])
             # run_mm_script(params=V_params_ss,data_dir=V_dir,data_fname=ss_fname)
             # Pa_ss,Pb_ss = import_mm_data(path.join(V_dir,ss_fname))
             # a_ss,b_ss,n_ss,T_ss,eigvals_ss,det_j_ss,L_ss = jac_eigvals_sweep(Pa_ss,Pb_ss,**V_params_ss)
         # map function onto pool of mathematica processes
-        with Pool(processes=n_proc) as pool:
-            out = pool.map(run_mm_script_parallel,V_params_ss_list)
-            res = pool.map(process_mm_data_parallel,V_params_ss_list)
+        # with Pool(processes=n_proc) as pool:
+        #     out = pool.map(run_mm_script_parallel,V_params_ss_list)
+        #     res = pool.map(process_mm_data_parallel,V_params_ss_list)
+    with Pool(processes=n_proc) as pool:
+        out = pool.map(run_mm_script_parallel,V_params_ss_list)
+        res = pool.map(process_mm_data_parallel,V_params_ss_list)
         # with ProcessPool(max_workers=n_proc, max_tasks=n_proc) as pool:
         #     out = pool.map(run_mm_script_parallel,V_params_ss_list)
         #     res = pool.map(process_mm_data_parallel,V_params_ss_list)
@@ -697,7 +709,7 @@ def compute_PVΔ_sweep(p_expt=p_expt_def,p_mat=p_si,sweep_name='test',nEq=6,n_pr
         #             break
         #         except TimeoutError as error:
         #             print("function took longer than %d seconds" % error.args[1])
-
+    for Vind, VV in enumerate(p_expt['V_rb']):
         # fill in dataset arrays, creating them first if Vind==0
         if Vind==0:
             Pa = np.zeros((ns,nV,nΔ,nEq),dtype=np.float64)
@@ -710,15 +722,16 @@ def compute_PVΔ_sweep(p_expt=p_expt_def,p_mat=p_si,sweep_name='test',nEq=6,n_pr
             det_j = np.zeros((ns,nV,nΔ,nEq),dtype=np.float64)
             L = np.zeros((ns,nV,nΔ,nEq),dtype=np.float64)
         for sind in range(ns):
-            Pa[sind,Vind,:] = res[sind]['Pa']
-            Pb[sind,Vind,:] = res[sind]['Pb']
-            a[sind,Vind,:] = res[sind]['a']
-            b[sind,Vind,:] = res[sind]['b']
-            n[sind,Vind,:] = res[sind]['n']
-            T[sind,Vind,:] = res[sind]['T']
-            eigvals[sind,Vind,:] = res[sind]['eigvals']
-            det_j[sind,Vind,:] = res[sind]['det_j']
-            L[sind,Vind,:] = res[sind]['L']
+            flat_index = int(np.ravel_multi_index((Vind,sind),(nV,ns)))
+            Pa[sind,Vind,:] = res[flat_index]['Pa']
+            Pb[sind,Vind,:] = res[flat_index]['Pb']
+            a[sind,Vind,:] = res[flat_index]['a']
+            b[sind,Vind,:] = res[flat_index]['b']
+            n[sind,Vind,:] = res[flat_index]['n']
+            T[sind,Vind,:] = res[flat_index]['T']
+            eigvals[sind,Vind,:] = res[flat_index]['eigvals']
+            det_j[sind,Vind,:] = res[flat_index]['det_j']
+            L[sind,Vind,:] = res[flat_index]['L']
         # save data
         V_data = {'Pa':Pa[:,Vind],'Pb':Pb[:,Vind],'a':a[:,Vind],'b':b[:,Vind],'n':n[:,Vind],'T':T[:,Vind],
             'eigvals':eigvals[:,Vind],'det_j':det_j[:,Vind],'L':L[:,Vind],**V_params}

@@ -41,11 +41,7 @@ else: # assume I'm on a MTL server or something
     data_dir = home+'/data/'
     n_proc_def = 30
 
-
-def n_sig_figs(x,n):
-    return round(x, -int(floor(log10(abs(x)))) + (n - 1))
-
-
+from FixedPointSweep import n_sig_figs, expt2norm_params
 
 
 def f_DrivenCavity(t,y,p):
@@ -147,20 +143,6 @@ def jac_tuning(t,y,p,dΔdt):
 ##
 ################################################################################
 
-def Vrb2τ_fc(V_rb,τ_fc0=250*u.ps,τ_fc_sat=3*u.ps,V_bi=1.1*u.volt):
-    τ = τ_fc0 * ( V_bi /(V_bi + V_rb))**2 + τ_fc_sat
-    return τ.to(u.ps)
-
-def Vrb2η(V_rb,λ=1.55*u.um):
-    c = u.speed_of_light
-    q = u.elementary_charge
-    h = u.planck_constant
-    f_l = (c/λ).to(u.THz) # laser frequency in radians/sec
-    E_ph = (h*f_l).to(u.eV)
-    η = ( ( q * V_rb + 2 * E_ph ) / ( 2 * E_ph) ).to(u.dimensionless).m
-    return η
-
-
 
 # default parameter dictionaries for exp2norm_params defined below
 p_si = {
@@ -192,179 +174,10 @@ p_expt_def = {
     'n_sf': 2, # number of significant figures to leave in the normalized parameters passed to mathematica. the fewer, the faster
     'δs': 0.05, # s step size (sqrt normalized input power)
     'δΔ': 0.2,  # Δ step size (cold cavity detuning)
+    'τ_th_norm_ζ_product': 4.5,  # τ_th_norm * ζ, inferred from experiment data
     'dΔdt': 1e-6,
 }
 
-def expt2norm_params(p_expt=p_expt_def,p_mat=p_si,verbose=True):
-    """Following Ryan's conventions in Conditions for Free Carrier Oscillations and... (conference, not JLT version) and 'Optical bistability, self-pulsing and XY optimization in silicon micro-rings with active carrier removal' from photonics west 2017"""
-    ##### useful constants
-    π = np.pi
-    c = u.speed_of_light
-    hbar = u.planck_constant / (2*π)
-    q = u.elementary_charge
-
-    #### unpack input dictionaries ####
-    # p_expt
-    λ = p_expt['λ']
-    FSR = p_expt['FSR']
-    d_ring = p_expt['d_ring']
-    FWHM = p_expt['FWHM']
-    FWHM_i = p_expt['FWHM_i']
-    Δ_min = p_expt['Δ_min']
-    Δ_max = p_expt['Δ_max']
-    P_bus_max = p_expt['P_bus_max']
-    τ_th = p_expt['τ_th']
-    df_dT = p_expt['df_dT']
-    τ_fc0 = p_expt['τ_fc0']
-    τ_fc_sat = p_expt['τ_fc_sat']
-    V_bi = p_expt['V_bi']
-    V_rb = p_expt['V_rb']
-    α_dB = p_expt['α_dB']
-    A = p_expt['A']
-    splitting = p_expt['splitting']
-    β_2 = p_expt['β_2']
-    # mathematica solver Parameters
-    n_sf = p_expt['n_sf'] # number of significant figures to leave in the normalized parameters passed to mathematica. the fewer, the faster
-    δs = p_expt['δs'] # s step size (sqrt normalized input power)
-    δΔ = n_sig_figs(p_expt['δΔ'],2) # Δ step size (cold cavity detuning)
-    # p_mat
-    r = p_mat['r']
-    γ = p_mat['γ']
-    μ = p_mat['μ']
-    σ = p_mat['σ']
-    c_v = p_mat['c_v']
-
-    ### Waveguide/Resonator Parameters ###
-    t_R = (1/FSR).to(u.ps) # round trip time
-    n_g = (c / ( π * d_ring * FSR )).to(u.dimensionless).m # group index from measured FSR
-    v_g = c / n_g # group velocity
-    κ = 2*π * FWHM # αL + θ, full measured linewidth
-    τ_ph = (1 / κ).to(u.ps) # photon lifetime in microring
-    κ_min = 2*π * FWHM_i # linewidth limit in super undercoupled regime
-#     αL = (κ_min*t_R).to(u.dimensionless).m # fractional power lost per round trip, should be ~0.2%
-#     α = α_dB/(10*np.log(10)) # measured loss in units of 1/cm
-#     κ_min =  α * d_ring / t_R # intrinsic linewidth due to loss
-    κ_c = κ - κ_min # coupling rate to bus waveguide in radians/sec
-    κ_c_Hz = κ_c/(2*π) # coupling rate to bus waveguide in GHz
-    δ_r = (splitting / FWHM).to(u.dimensionless).m # normalized splitting in units of individual mode linewidth
-    θ = (κ_c*t_R).to(u.dimensionless).m # fractional power loss to coupling per round trip
-    ω_l = (2*π*c/λ).to(u.THz) # laser frequency in radians/sec
-    E_ph = (hbar*ω_l).to(u.eV)
-    # fractional increase in thermal energy per TPA due to carrier removal work
-    η = Vrb2η(V_rb,λ=λ)
-    # reduced free carrier lifetime
-    τ_fc = Vrb2τ_fc(V_rb,τ_fc0=τ_fc0,τ_fc_sat=τ_fc_sat,V_bi=V_bi)
-    τ_fc_norm = (τ_fc/τ_ph).to(u.dimensionless).m
-    # thermal/TO properties
-    τ_th_norm = (τ_th/τ_ph).to(u.dimensionless).m
-    dneff_dT = -(n_g * df_dT * 2 * π / ω_l).to(1/u.degK)
-    δ_T = ( ( ω_l / c ) * dneff_dT ).to(1/u.cm/u.degK) # δ_T = dβ/dT = (ω/c)*dneff/dT
-    ζ = (δ_T / ( 2 * c_v * γ * v_g )).to(u.dimensionless).m
-    # FC generation rate per |a|^4
-    χ = ( ( r * μ * σ ) / ( 2 * E_ph * γ * v_g ) ).to(u.dimensionless).m
-
-    #### Normalization Constants ####
-    # circulating field, a = ξ_a * \bar{a} in sqrt{watt/cm^2}
-    ξ_a = (1/np.sqrt(2*γ*v_g*τ_ph)).to(u.watt**(0.5)/u.cm)
-    # input/output fields, a = ξ_in * \bar{a} in sqrt{watt/cm^2}
-    ξ_in = np.sqrt( t_R**2 / ( 8 * γ * v_g * τ_ph**3 * θ ) ).to(u.watt**(0.5)/u.cm)
-    # carrier density, n = ξ_n * \bar{n} in cm^{-3}
-    ξ_n = (1 / ( μ * σ * v_g * τ_ph )).to(u.cm**-3)
-    # fast time, for KCG consideration
-    ξ_t = np.sqrt( β_2 * v_g * τ_ph ).to(u.ps)
-    # thermal scaling between cavity linewidths/kelvin
-    ξ_T = ( 1 / ( δ_T * v_g * τ_ph ) ).to(u.degK)
-
-    #### normalized input power range ####
-    I_bus_max = P_bus_max / A
-    s_max = int( np.ceil( 10 * ( np.sqrt( I_bus_max) / ξ_in ).to(u.dimensionless).m ) ) / 10.
-    s = np.arange(δs,s_max,δs)
-    P_bus = ( ( s * ξ_in )**2 * A ).to(u.mW)
-
-
-    #### normalized tuning range ####
-    Δ_min_norm = int( np.floor( ( 2*π * Δ_min * τ_ph ).to(u.dimensionless).m ) )
-    Δ_max_norm = int( np.ceil( ( 2*π * Δ_max * τ_ph ).to(u.dimensionless).m ) )
-    Δ_norm = np.arange(Δ_min_norm,Δ_max_norm,δΔ)
-    Δ = ( Δ_norm / ( 2*π * τ_ph ) ).to(u.GHz)
-
-    # load newly calculated unitful and normalized values into p_expt to export
-    p_expt['s_max'] = s_max
-    p_expt['Δ_min_norm'] = Δ_min_norm
-    p_expt['Δ_max_norm'] = Δ_max_norm
-    p_expt['η'] = η
-    p_expt['τ_fc_norm'] = τ_fc_norm
-    p_expt['τ_th_norm'] = τ_th_norm
-    p_expt['ζ'] = ζ
-    p_expt['χ'] = χ
-    p_expt['E_ph'] = E_ph
-    p_expt['δ_T'] = δ_T
-    p_expt['n_g'] = n_g
-    p_expt['P_bus'] = P_bus
-    p_expt['s'] = s
-    p_expt['κ_c_Hz'] = κ_c_Hz
-    p_expt['τ_fc'] = τ_fc
-    p_expt['τ_th'] = τ_th
-    p_expt['τ_ph'] = τ_ph
-    p_expt['t_R'] = t_R
-    p_expt['θ'] = θ
-    p_expt['ξ_a'] = ξ_a
-    p_expt['ξ_in'] = ξ_in
-    p_expt['ξ_n'] = ξ_n
-    p_expt['ξ_T'] = ξ_T
-    p_expt['ξ_t'] = ξ_t
-
-    if verbose:
-        print(f"s_max: {s_max:1.3g}")
-        print(f"Δ_min_norm: {Δ_min_norm:1.3g}")
-        print(f"Δ_max_norm: {Δ_max_norm:1.3g}")
-        print(f"η: {η:1.3g}")
-        print(f"τ_fc_norm: {τ_fc_norm:1.3g}")
-        print(f"τ_th_norm: {τ_th_norm:1.3g}")
-        print(f"ζ: {ζ:1.3g}")
-        print(f"χ: {χ:1.3g}")
-
-        print(f"τ_fc: {τ_fc:1.3g}")
-        print(f"τ_th: {τ_th:1.3g}")
-        print(f"τ_ph: {τ_ph:1.3g}")
-        print(f"t_R: {t_R:1.3g}")
-
-        print(f"E_ph: {E_ph:1.3g}")
-        print(f"δ_T: {δ_T:1.3g}")
-        print(f"n_g: {n_g:1.3g}")
-        print(f"θ: {θ:1.3g}")
-
-        print(f"ξ_a: {ξ_a:1.3g}")
-        print(f"ξ_in: {ξ_in:1.3g}")
-        print(f'ξ_n: {ξ_n:1.3e}')
-        print(f"ξ_T: {ξ_T:1.3g}")
-        print(f"ξ_t: {ξ_t:1.3g}")
-
-### Old manual p_norm values for reference
-#     p_norm = {'Δ':np.arange(-35,7,0.2),
-#               's':np.arange(0,0.2,0.02),
-#               'γ':2., # splitting over linewidth
-#               'μ':30.,
-#               'r':0.2,
-#               'ζ':0.07,
-#               'τ_th':3200,
-#               'η':10,
-#               'τ_fc':0.01,
-#               'χ':5.}
-
-    p_norm = {'Δ':Δ_norm,
-              's':s,
-              'γ':n_sig_figs(δ_r,n_sf), # splitting over linewidth, old variable name convention.
-              'μ':n_sig_figs(p_mat['μ'],n_sf),
-              'r':n_sig_figs(p_mat['r'],n_sf),
-              'ζ':n_sig_figs(ζ,n_sf),
-              'τ_th': n_sig_figs(τ_th_norm,n_sf),
-              'η': n_sig_figs(η,n_sf),
-              'τ_fc': n_sig_figs(τ_fc_norm,n_sf),
-              'χ': n_sig_figs(χ,n_sf),
-             }
-
-    p_expt['p_norm'] = p_norm
 
 ################################################################################
 ##
