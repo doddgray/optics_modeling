@@ -37,7 +37,7 @@ p_expt = {
     'Δ_min': -35*u.GHz, # f_cavity,0 - f_laser tuning minimum
     'Δ_max': 10*u.GHz, # f_cavity,0 - f_laser tuning maximum
     'P_bus_max': 0.4 * u.mW, # max input power in bus waveguide
-    'V_rb': np.arange(4,24,4)*u.volt,
+    'V_rb': V_rb,
     'τ_th': 50 * u.ns, # thermal "time constant" to fit
     'df_dT': -9.7 * u.GHz / u.degK, # measured thermal tuning rate
     'τ_fc0': 350 * u.ps, # measured/modeled free carrier lifetime at Vrb=0

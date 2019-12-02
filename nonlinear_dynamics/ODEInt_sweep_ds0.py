@@ -7,21 +7,19 @@
 #     sys.path.append(mm_dir)
 # import os
 # os.environ['WolframKernel'] = '/usr/local/Wolfram/Mathematica/12.0/Executables/WolframKernel'
-import FixedPointSweep as fps
+import ODEIntSweep as ois
 from instrumental import u
 import numpy as np
 
-data_dir = fps.data_dir
+data_dir = ois.data_dir
 
 p_si = {
     'r': 0.189, # nonlinear refraction 2π * n_2 / λ
     'γ': 3.1e-9 * u.cm/u.watt, # nonlinear refraction 2π * n_2 / λ,
     'μ': 25, # FCD/FCA ratio
     'σ': 1.45e-17 * u.cm**2, # FCA cross section (electron-hole average)
-    'c_v': 300./(0.6 * u.degK / u.joule * u.cm**3) # silicon volumetric heat capacity near room temp
+    'c_v': 1./(0.6 * u.degK / u.joule * u.cm**3) # silicon volumetric heat capacity near room temp
 }
-
-# heat capacity increased from 1/0.6 to 300/0.6 to check impact on matching with expt data
 
 τ_th_list = np.array([30,100,300,1000])*u.ns
 V_rb = np.concatenate((np.arange(0,3,0.5),np.arange(4,24,4)))*u.volt
@@ -45,9 +43,10 @@ p_expt = {
     'α_dB': 0.7/u.cm, # fit waveguide loss inside ring in units of dB/cm
     'A': 0.1 * u.um**2, # mode effective area, from mode solver
     'β_2': 2 * u.ps**2/u.m, # GVD roughly measured, expected to be ~ 1 ps^2 / m
-    'n_sf': 2, # number of significant figures to leave in the normalized parameters passed to mathematica. the fewer, the faster
+    'n_sf': 3, # number of significant figures to leave in the normalized parameters passed to mathematica. the fewer, the faster
     'δs': 0.2, # s step size (sqrt normalized input power)
     'δΔ': 0.2,  # Δ step size (cold cavity detuning)
+    'dΔdt': 1e-6,
 }
 
 tind_start=0 # in case you need to restart in the middle after a crash
@@ -58,9 +57,9 @@ if __name__ == '__main__':
             p = p_expt.copy()
             p['τ_th'] = tt
 
-            fps.compute_PVΔ_sweep(p_expt=p,
+            ois.collect_ODEInt_PVΔ_sweep(p_expt=p,
                                 p_mat=p_si,
-                                sweep_name=f'ds5_tau{tind}',
+                                sweep_name=f'ds0_tau{tind}',
                                 data_dir=data_dir,
                                 verbose=True,
                                 return_data=False,
