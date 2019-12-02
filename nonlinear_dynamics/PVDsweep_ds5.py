@@ -45,7 +45,7 @@ p_expt = {
     'α_dB': 0.7/u.cm, # fit waveguide loss inside ring in units of dB/cm
     'A': 0.1 * u.um**2, # mode effective area, from mode solver
     'β_2': 2 * u.ps**2/u.m, # GVD roughly measured, expected to be ~ 1 ps^2 / m
-    'n_sf': 4, # number of significant figures to leave in the normalized parameters passed to mathematica. the fewer, the faster
+    'n_sf': 2, # number of significant figures to leave in the normalized parameters passed to mathematica. the fewer, the faster
     'δs': 0.2, # s step size (sqrt normalized input power)
     'δΔ': 0.2,  # Δ step size (cold cavity detuning)
 }
