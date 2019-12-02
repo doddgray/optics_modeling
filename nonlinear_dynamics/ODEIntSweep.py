@@ -396,8 +396,8 @@ def ODEInt_Dsweep_trace(p):
     sol_b2r = solve_ivp(fun=lambda t, y: f_tuning(t, y, p, -p['dΔdt']),
                             t_span=t_span,
                             y0=y0_b2r,
-                            method='LSODA', #'BDF',
-                            min_step=0.1,
+                            method='RK45', #'BDF',
+                            # min_step=0.1,
                             max_step=3,
                             jac=lambda t, y: jac_tuning(t, y, p, -p['dΔdt']),
                            )
@@ -406,8 +406,8 @@ def ODEInt_Dsweep_trace(p):
     sol_r2b = solve_ivp(fun=lambda t, y: f_tuning(t, y, p, p['dΔdt']),
                             t_span=t_span,
                             y0=y0_r2b,
-                            method='LSODA', #'BDF',
-                            min_step=0.1,
+                            method='RK45', #'BDF',
+                            # min_step=0.1,
                             max_step=3,
                             jac=lambda t, y: jac_tuning(t, y, p, p['dΔdt']),
                            )
