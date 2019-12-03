@@ -21,7 +21,8 @@ p_si = {
     'c_v': 1./(0.6 * u.degK / u.joule * u.cm**3) # silicon volumetric heat capacity near room temp
 }
 
-τ_th_list = np.array([30,100,300,1000])*u.ns
+# τ_th_list = np.array([30,100,300,1000])*u.ns
+τ_th_list = np.array([30,100,300,1000,20,50,200,500])*u.ns
 V_rb = np.concatenate((np.arange(0,3,1),np.arange(4,24,6)))*u.volt
 
 p_expt = {
@@ -47,10 +48,10 @@ p_expt = {
     'δs': 0.4, # s step size (sqrt normalized input power)
     'δΔ': 0.2,  # Δ step size (cold cavity detuning)
     'τ_th_norm_ζ_product': 4.5,  # τ_th_norm * ζ, inferred from experiment data
-    'dΔdt': 3e-3,
+    'dΔdt': 1e-3,
 }
 
-tind_start=0 # in case you need to restart in the middle after a crash
+tind_start=4 # in case you need to restart in the middle after a crash
 
 if __name__ == '__main__':
     for tind,tt in enumerate(τ_th_list):
