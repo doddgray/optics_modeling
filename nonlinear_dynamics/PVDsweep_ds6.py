@@ -23,7 +23,8 @@ p_si = {
 
 # heat capacity increased from 1/0.6 to 300/0.6 to check impact on matching with expt data
 
-τ_th_list = np.array([30,100,300,1000])*u.ns
+# τ_th_list = np.array([30,100,300,1000])*u.ns
+τ_th_list = np.array([30,100,300,1000,20,50,200,500])*u.ns
 V_rb = np.concatenate((np.arange(0,3,0.5),np.arange(4,24,4)))*u.volt
 
 p_expt = {
@@ -51,7 +52,7 @@ p_expt = {
     'τ_th_norm_ζ_product': 4.5,  # τ_th_norm * ζ, inferred from experiment data
 }
 
-tind_start=0 # in case you need to restart in the middle after a crash
+tind_start=4 # in case you need to restart in the middle after a crash
 
 if __name__ == '__main__':
     for tind,tt in enumerate(τ_th_list):
