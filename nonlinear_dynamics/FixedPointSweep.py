@@ -551,7 +551,8 @@ def expt2norm_params(p_expt=p_expt_def,p_mat=p_si,verbose=True):
     p_expt['s_max'] = s_max
     p_expt['Δ_min_norm'] = Δ_min_norm
     p_expt['Δ_max_norm'] = Δ_max_norm
-    p_expt['η'] = η
+    p_expt['η1'] = η1
+    p_expt['η2'] = η2
     p_expt['τ_fc_norm'] = τ_fc_norm
     p_expt['τ_th_norm'] = τ_th_norm
     p_expt['ζ'] = ζ
