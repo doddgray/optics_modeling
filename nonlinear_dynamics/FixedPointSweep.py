@@ -83,7 +83,7 @@ def run_mm_script_parallel(params=params):
     data_fname = params['name'] + '.csv'
     arg_list = [data_dir,data_fname,Δ_min,Δ_max,nΔ,params['s'],
         params['γ'],params['μ'],params['r'],params['ζ'],
-        params['τ_th'],params['η'],params['τ_fc'],params['χ']]
+        params['τ_th'],params['η2'],params['τ_fc'],params['χ'],params['α'],params['η1']]
     cmd = [mm_script_fpath]+[f'{arg}' for arg in arg_list]
     # print('Δ_max:' + str(Δ_max))
     # print('Δ_min:' + str(Δ_min))
@@ -398,13 +398,13 @@ def Vrb2τ_fc(V_rb,τ_fc0=250*u.ps,τ_fc_sat=3*u.ps,V_bi=1.1*u.volt):
     τ = τ_fc0 * ( V_bi /(V_bi + V_rb))**2 + τ_fc_sat
     return τ.to(u.ps)
 
-def Vrb2η(V_rb,λ=1.55*u.um):
+def Vrb2η(V_rb,n_ph_abs=2,λ=1.55*u.um):
     c = u.speed_of_light
     q = u.elementary_charge
     h = u.planck_constant
     f_l = (c/λ).to(u.THz) # laser frequency in radians/sec
     E_ph = (h*f_l).to(u.eV)
-    η = ( ( q * V_rb + 2 * E_ph ) / ( 2 * E_ph) ).to(u.dimensionless).m
+    η = ( ( q * V_rb + n_ph_abs * E_ph ) / ( n_ph_abs * E_ph) ).to(u.dimensionless).m
     return η
 
 
@@ -413,7 +413,7 @@ def Vrb2η(V_rb,λ=1.55*u.um):
 p_si = {
     'r': 0.189, # nonlinear refraction 2π * n_2 / λ
     'γ': 3.1e-9 * u.cm/u.watt, # nonlinear refraction 2π * n_2 / λ,
-    'μ': 25, # FCD/FCA ratio
+    'μ': 30, # FCD/FCA ratio
     'σ': 1.45e-17 * u.cm**2, # FCA cross section (electron-hole average)
     'c_v': 1./(0.6 * u.degK / u.joule * u.cm**3) # silicon volumetric heat capacity near room temp
 }
@@ -430,16 +430,18 @@ p_expt_def = {
     'P_bus_max': 1 * u.mW, # max input power in bus waveguide
     'τ_th': 1.5 * u.us, # thermal "time constant" to fit
     'df_dT': -9.7 * u.GHz / u.degK, # measured thermal tuning rate
-    'τ_fc0': 250 * u.ps, # measured/modeled free carrier lifetime at Vrb=0
-    'τ_fc_sat': 3 * u.ps, # measured/modeled minimum free carrier lifetime at Vrb>~15V
-    'V_bi': 1.1 * u.volt, # measured/modeled diode built-in voltage
+    'τ_fc0': 350 * u.ps, # measured/modeled free carrier lifetime at Vrb=0
+    'τ_fc_sat': 15 * u.ps, # measured/modeled minimum free carrier lifetime at Vrb>~15V
+    'V_bi': 0.95 * u.volt, # measured/modeled diode built-in voltage
     'α_dB': 0.7/u.cm, # fit waveguide loss inside ring in units of dB/cm
+    'α_abs_dB': 0.0825/u.cm, # based on Gil-Molina+Dainese papers, reporting 0.019/cm (not in dB/cm)
     'A': 0.1 * u.um**2, # mode effective area, from mode solver
     'β_2': 2 * u.ps**2/u.m, # GVD roughly measured, expected to be ~ 1 ps^2 / m
     'n_sf': 2, # number of significant figures to leave in the normalized parameters passed to mathematica. the fewer, the faster
     'δs': 0.05, # s step size (sqrt normalized input power)
     'δΔ': 0.2,  # Δ step size (cold cavity detuning)
-    'τ_th_norm_ζ_product': 4.5,  # τ_th_norm * ζ, inferred from experiment data
+    'τ_th_norm_ζ_product': 5,  # τ_th_norm * ζ, inferred from experiment data
+    'χ3_sw_factor':1.5, # to reflect the effective χ(3) enhancement for standing waves vs. traveling waves = \int_0^\pi (E_{sw} * cos(z))^4 dz, with E_sw = sqrt(2)*E_tr
 }
 
 def expt2norm_params(p_expt=p_expt_def,p_mat=p_si,verbose=True):
@@ -467,6 +469,7 @@ def expt2norm_params(p_expt=p_expt_def,p_mat=p_si,verbose=True):
     V_bi = p_expt['V_bi']
     V_rb = p_expt['V_rb']
     α_dB = p_expt['α_dB']
+    α_abs_dB = p_expt['α_abs_dB']
     A = p_expt['A']
     splitting = p_expt['splitting']
     β_2 = p_expt['β_2']
@@ -477,7 +480,7 @@ def expt2norm_params(p_expt=p_expt_def,p_mat=p_si,verbose=True):
     δΔ = n_sig_figs(p_expt['δΔ'],2) # Δ step size (cold cavity detuning)
     # p_mat
     r = p_mat['r']
-    γ = p_mat['γ']
+    γ = p_mat['γ'] * p_expt['χ3_sw_factor'] # use 1.5x for splitting>linewidth to correct for effective enhancement of χ(3) for standing waves
     μ = p_mat['μ']
     σ = p_mat['σ']
     c_v = p_mat['c_v']
@@ -499,7 +502,9 @@ def expt2norm_params(p_expt=p_expt_def,p_mat=p_si,verbose=True):
     ω_l = (2*π*c/λ).to(u.THz) # laser frequency in radians/sec
     E_ph = (hbar*ω_l).to(u.eV)
     # fractional increase in thermal energy per TPA due to carrier removal work
-    η = Vrb2η(V_rb,λ=λ)
+    η2 = Vrb2η(V_rb,n_ph_abs=2,λ=λ)
+    # fractional increase in thermal energy per linearly absorbed due to carrier removal work
+    η1 = Vrb2η(V_rb,n_ph_abs=1,λ=λ)
     # reduced free carrier lifetime
     τ_fc = Vrb2τ_fc(V_rb,τ_fc0=τ_fc0,τ_fc_sat=τ_fc_sat,V_bi=V_bi)
     τ_fc_norm = (τ_fc/τ_ph).to(u.dimensionless).m
@@ -512,6 +517,10 @@ def expt2norm_params(p_expt=p_expt_def,p_mat=p_si,verbose=True):
     heat_capacity_volume_ratio = ζ_mode_volume / ζ
     # FC generation rate per |a|^4
     χ = ( ( r * μ * σ ) / ( 2 * E_ph * γ * v_g ) ).to(u.dimensionless).m
+
+    # normalized linear absorption parameter α
+    α_abs = α_abs_dB.to(1/u.cm) * np.log(10) / 10.
+    α_abs_norm = ( α_abs * ( μ * σ * τ_ph / ( 2. * γ  * E_ph ) ) ).to(u.dimensionless).m
 
     #### Normalization Constants ####
     # circulating field, a = ξ_a * \bar{a} in sqrt{watt/cm^2}
@@ -565,17 +574,21 @@ def expt2norm_params(p_expt=p_expt_def,p_mat=p_si,verbose=True):
     p_expt['ξ_n'] = ξ_n
     p_expt['ξ_T'] = ξ_T
     p_expt['ξ_t'] = ξ_t
+    p_expt['α_abs'] = α_abs
+    p_expt['α_abs_norm'] = α_abs_norm
 
     if verbose:
         print(f"s_max: {s_max:1.3g}")
         print(f"Δ_min_norm: {Δ_min_norm:1.3g}")
         print(f"Δ_max_norm: {Δ_max_norm:1.3g}")
-        print(f"η: {η:1.3g}")
+        print(f"η2: {η2:1.3g}")
         print(f"τ_fc_norm: {τ_fc_norm:1.3g}")
         print(f"τ_th_norm: {τ_th_norm:1.3g}")
         print(f"ζ: {ζ:1.3g}")
         print(f"heat_capacity_volume_ratio: {heat_capacity_volume_ratio:1.3g}")
         print(f"χ: {χ:1.3g}")
+        print(f"α_abs_norm: {α_abs_norm:1.3g}")
+        print(f"η1: {η1:1.3g}")
 
         print(f"τ_fc: {τ_fc:1.3g}")
         print(f"τ_th: {τ_th:1.3g}")
@@ -604,7 +617,8 @@ def expt2norm_params(p_expt=p_expt_def,p_mat=p_si,verbose=True):
 #               'η':10,
 #               'τ_fc':0.01,
 #               'χ':5.}
-
+     # I can't make symbol+number variable names in mathematica, so there η1 is called ψ
+     # and η2 is called η
     p_norm = {'Δ':Δ_norm,
               's':s,
               'γ':n_sig_figs(δ_r,n_sf), # splitting over linewidth, old variable name convention.
@@ -612,9 +626,11 @@ def expt2norm_params(p_expt=p_expt_def,p_mat=p_si,verbose=True):
               'r':n_sig_figs(p_mat['r'],n_sf),
               'ζ':n_sig_figs(ζ,n_sf),
               'τ_th': n_sig_figs(τ_th_norm,n_sf),
-              'η': n_sig_figs(η,n_sf),
+              'η2': n_sig_figs(η2,n_sf),
               'τ_fc': n_sig_figs(τ_fc_norm,n_sf),
               'χ': n_sig_figs(χ,n_sf),
+              'α': n_sig_figs(α_abs_norm,n_sf),
+              'η1': n_sig_figs(η1,n_sf),
              }
 
     p_expt['p_norm'] = p_norm
@@ -766,6 +782,25 @@ def load_PVΔ_sweep(sweep_name='test',data_dir=data_dir,verbose=True,fpath=None)
     with open( latest_metadata_file, "rb" ) as f:
         metadata = pickle.load(f)
     metadata.update(data)
+    # do a bit of processing to get data ready for plotting
+    V_rb = metadata['V_rb']
+    nV = len(V_rb)
+    dV0 = metadata['V_params'][0]
+    metadata.update(dV0)
+    metadata['V_rb'] = V_rb
+    metadata['η'] = np.zeros(nV)
+    metadata['τ_fc_norm'] = np.zeros(nV)
+    metadata['τ_fc'] = np.zeros(nV)*dV0['τ_fc'].units
+    for Vind in range(nV):
+        dV = metadata['V_params'][Vind]
+        metadata['η'][Vind] = dV['η']
+        metadata['τ_fc_norm'][Vind] = dV['τ_fc_norm']
+        metadata['τ_fc'][Vind] = dV['τ_fc']
+    if 'Δ' not in metadata.keys():
+        Δ_min_norm = int( np.floor( ( 2*np.pi * metadata['Δ_min'] * metadata['τ_ph'] ).to(u.dimensionless).m ) )
+        Δ_max_norm = int( np.ceil( ( 2*np.pi * metadata['Δ_max'] * metadata['τ_ph'] ).to(u.dimensionless).m ) )
+        Δ_norm = np.arange(Δ_min_norm,Δ_max_norm,metadata['δΔ'])
+        metadata['Δ'] = ( Δ_norm / ( 2*np.pi * metadata['τ_ph'] ) ).to(u.GHz)
     return metadata
 
 ################################################################################
