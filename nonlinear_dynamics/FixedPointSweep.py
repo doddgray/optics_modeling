@@ -158,19 +158,19 @@ def process_mm_data_parallel(params=params):
             }
     return res
 
-def process_mm_data_line(line,ncol=12):
+def process_mm_data_line(line,ncol=14):
     line_proc = line.replace('{Pa -> ','').replace('Pb -> ','').replace('}','').replace('"','').replace('*^','e')
     for iter in range(ncol + 1 - len(line_proc.split(','))):
         line_proc = line_proc[:-1] + ',' + line_proc[-1]
     final_line = ','.join([x.strip() if x else '0.0' for x in  line_proc.split(',')[:-1]])+'\n'
     return final_line
 
-def import_mm_data(data_fname,data_dir=data_dir,ncol=12):
+def import_mm_data(data_fname,data_dir=data_dir,ncol=14):
     data_str = ''
     data_fpath = path.normpath(path.join(data_dir,data_fname))
     with open(data_fpath,'r') as f:
         for line in f:
-            data_str += process_mm_data_line(line)
+            data_str += process_mm_data_line(line,ncol=ncol)
     proc_fpath = data_fpath.strip('.csv')+'_proc.csv'
     with open(proc_fpath,'w') as f:
         f.write(data_str)
