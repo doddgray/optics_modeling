@@ -41,7 +41,7 @@ else: # assume I'm on a MTL server or something
     data_dir = home+'/data/'
     n_proc_def = 30
 
-from FixedPointSweep import n_sig_figs, expt2norm_params
+from FixedPointSweep import n_sig_figs, expt2norm_params, p_si, p_expt_def
 
 
 def f_DrivenCavity(t,y,p):
@@ -87,6 +87,34 @@ def jac_DrivenCavity(t,y,p):
     return [d_d_a_c, d_d_a_c_star, d_d_a_s, d_d_a_s_star, d_d_n, d_d_T]
 
 def f_tuning(t,y,p,dΔdt):
+    # unpack paramater dict "p"
+    s = p['s']
+    δ_r = p['γ']
+    μ = p['μ']
+    r = p['r']
+    ζ = p['ζ']
+    η1 = p['η1']
+    η2 = p['η2']
+    χ = p['χ']
+    α = p['α']
+    τ_fc = p['τ_fc']
+    τ_xfc = p['τ_xfc']
+    τ_th = p['τ_th']
+    # dΔdt = p['dΔdt']
+    # define state vector
+    Δ, a_c, a_c_star, a_s, a_s_star, n_c, n_s, T = y
+    # define equation system
+    d_Δ = dΔdt
+    d_a_c = ( ( -0.5 + 1j*Δ + 1j*δ_r/2.0) + ( -1/μ - 1j ) * n_c + (1j - r) * (a_c * a_c_star) + 1j*T ) * a_c + s
+    d_a_c_star = np.conjugate( ( -0.5 + 1j*Δ + 1j*δ_r/2.0) + ( -1/μ - 1j ) * n_c + (1j - r) * (a_c * a_c_star) + 1j*T ) * a_c_star + s
+    d_a_s = ( ( -0.5 + 1j*Δ - 1j*δ_r/2.0) + ( -1/μ - 1j ) * n_s + (1j - r) * (a_s * a_s_star) + 1j*T ) * a_s + s
+    d_a_s_star = np.conjugate( ( -0.5 + 1j*Δ - 1j*δ_r/2.0) + ( -1/μ - 1j ) * n_s + (1j - r) * (a_s * a_s_star) + 1j*T ) * a_s_star + s
+    d_n_c = -n_c / τ_fc + α * (a_c*a_c_star) + χ * (a_c*a_c_star)**2 + ( n_s - n_c ) / τ_xfc
+    d_n_s = -n_s / τ_fc + α * (a_s*a_s_star) + χ * (a_s*a_s_star)**2 + ( n_c - n_s ) / τ_xfc
+    d_T = -T / τ_th + ζ * ( η2 * r * ( (a_c*a_c_star)**2 + (a_s*a_s_star)**2 ) + η1 * r * α / χ ( (a_c*a_c_star) + (a_s*a_s_star) ) + 1 / μ * ( (a_c*a_c_star) * n_c + (a_s*a_s_star) * n_s ) )
+    return [d_Δ, d_a_c, d_a_c_star, d_a_s, d_a_s_star , d_n_c, d_n_s, d_T]
+
+def f_tuning_old(t,y,p,dΔdt):
     # unpack paramater dict "p"
     s = p['s']
     δ_r = p['γ']
@@ -144,39 +172,39 @@ def jac_tuning(t,y,p,dΔdt):
 ################################################################################
 
 
-# default parameter dictionaries for exp2norm_params defined below
-p_si = {
-    'r': 0.189, # nonlinear refraction 2π * n_2 / λ
-    'γ': 3.1e-9 * u.cm/u.watt, # nonlinear refraction 2π * n_2 / λ,
-    'μ': 25, # FCD/FCA ratio
-    'σ': 1.45e-17 * u.cm**2, # FCA cross section (electron-hole average)
-    'c_v': 1./(0.6 * u.degK / u.joule * u.cm**3) # silicon volumetric heat capacity near room temp
-}
-
-p_expt_def = {
-    'λ': 1.55 * u.um, # free space laser wavelength
-    'FSR': 601 * u.GHz, # measured ring FSR
-    'd_ring': 40 * u.um, # microring diameter
-    'FWHM': 340 * u.MHz, # measured Lorentzian linewidth of single resonance
-    'FWHM_i': 190 * u.MHz, # measured "intrinsic" Lorentzian linewidth of single resonance
-    'splitting': 1.1*u.GHz, # measured double-lorentzian splitting
-    'Δ_min': -60*u.GHz, # f_cavity,0 - f_laser tuning minimum
-    'Δ_max': 5*u.GHz, # f_cavity,0 - f_laser tuning maximum
-    'P_bus_max': 1 * u.mW, # max input power in bus waveguide
-    'τ_th': 1.5 * u.us, # thermal "time constant" to fit
-    'df_dT': -9.7 * u.GHz / u.degK, # measured thermal tuning rate
-    'τ_fc0': 250 * u.ps, # measured/modeled free carrier lifetime at Vrb=0
-    'τ_fc_sat': 3 * u.ps, # measured/modeled minimum free carrier lifetime at Vrb>~15V
-    'V_bi': 1.1 * u.volt, # measured/modeled diode built-in voltage
-    'α_dB': 0.7/u.cm, # fit waveguide loss inside ring in units of dB/cm
-    'A': 0.1 * u.um**2, # mode effective area, from mode solver
-    'β_2': 2 * u.ps**2/u.m, # GVD roughly measured, expected to be ~ 1 ps^2 / m
-    'n_sf': 2, # number of significant figures to leave in the normalized parameters passed to mathematica. the fewer, the faster
-    'δs': 0.05, # s step size (sqrt normalized input power)
-    'δΔ': 0.2,  # Δ step size (cold cavity detuning)
-    'τ_th_norm_ζ_product': 4.5,  # τ_th_norm * ζ, inferred from experiment data
-    'dΔdt': 1e-6,
-}
+# # default parameter dictionaries for exp2norm_params defined below
+# p_si = {
+#     'r': 0.189, # nonlinear refraction 2π * n_2 / λ
+#     'γ': 3.1e-9 * u.cm/u.watt, # nonlinear refraction 2π * n_2 / λ,
+#     'μ': 25, # FCD/FCA ratio
+#     'σ': 1.45e-17 * u.cm**2, # FCA cross section (electron-hole average)
+#     'c_v': 1./(0.6 * u.degK / u.joule * u.cm**3) # silicon volumetric heat capacity near room temp
+# }
+#
+# p_expt_def = {
+#     'λ': 1.55 * u.um, # free space laser wavelength
+#     'FSR': 601 * u.GHz, # measured ring FSR
+#     'd_ring': 40 * u.um, # microring diameter
+#     'FWHM': 340 * u.MHz, # measured Lorentzian linewidth of single resonance
+#     'FWHM_i': 190 * u.MHz, # measured "intrinsic" Lorentzian linewidth of single resonance
+#     'splitting': 1.1*u.GHz, # measured double-lorentzian splitting
+#     'Δ_min': -60*u.GHz, # f_cavity,0 - f_laser tuning minimum
+#     'Δ_max': 5*u.GHz, # f_cavity,0 - f_laser tuning maximum
+#     'P_bus_max': 1 * u.mW, # max input power in bus waveguide
+#     'τ_th': 1.5 * u.us, # thermal "time constant" to fit
+#     'df_dT': -9.7 * u.GHz / u.degK, # measured thermal tuning rate
+#     'τ_fc0': 250 * u.ps, # measured/modeled free carrier lifetime at Vrb=0
+#     'τ_fc_sat': 3 * u.ps, # measured/modeled minimum free carrier lifetime at Vrb>~15V
+#     'V_bi': 1.1 * u.volt, # measured/modeled diode built-in voltage
+#     'α_dB': 0.7/u.cm, # fit waveguide loss inside ring in units of dB/cm
+#     'A': 0.1 * u.um**2, # mode effective area, from mode solver
+#     'β_2': 2 * u.ps**2/u.m, # GVD roughly measured, expected to be ~ 1 ps^2 / m
+#     'n_sf': 2, # number of significant figures to leave in the normalized parameters passed to mathematica. the fewer, the faster
+#     'δs': 0.05, # s step size (sqrt normalized input power)
+#     'δΔ': 0.2,  # Δ step size (cold cavity detuning)
+#     'τ_th_norm_ζ_product': 4.5,  # τ_th_norm * ζ, inferred from experiment data
+#     'dΔdt': 1e-6, # tuning rate for direct integration,
+# }
 
 
 ################################################################################
@@ -200,11 +228,12 @@ def ODEInt_Dsweep_trace(p):
     t_max = (Δ0_b2r - Δ0_r2b) / p['dΔdt']
     a_0 = b_0 = 0.0 + 0.0j
     a_star_0 = b_star_0 = np.conjugate(a_0)
-    n0 = 0.0
+    na0 = 0.0
+    nb0 = 0.0
     T0 = 0.0
     # Δ, a_c, a_c_star, a_s, a_s_star, n, T = y
-    y0_b2r = [Δ0_b2r,a_0,a_star_0,a_0,a_star_0,n0,T0]
-    y0_r2b = [Δ0_r2b,a_0,a_star_0,a_0,a_star_0,n0,T0]
+    y0_b2r = [Δ0_b2r,a_0,a_star_0,b_0,b_star_0,na0,nb0,T0]
+    y0_r2b = [Δ0_r2b,a_0,a_star_0,b_0,b_star_0,na0,nb0,T0]
     t_span = (0.0, t_max)
     sol_b2r = solve_ivp(fun=lambda t, y: f_tuning(t, y, p, -p['dΔdt']),
                             t_span=t_span,
