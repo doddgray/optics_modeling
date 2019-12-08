@@ -277,7 +277,7 @@ def ss_vals(Pa,Pb,Δ=-20.,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=30.,η2
     return a_ss, b_ss, na_ss, nb_ss, T_ss
     #return a_ss, b_ss, n_ss, T_ss,Ba,Bb,ϕ_a,ϕ_b
 
-def jacobian(a,b,na,nb,T,Δ=-20.,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=30.,η2=8.,η1=15.,τ_fc=0.1,χ=5.α=10,):
+def jacobian(a,b,na,nb,T,Δ=-20.,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=30.,η2=8.,η1=15.,τ_fc=0.1,χ=5.,α=10,):
     a_star = np.conj(a)
     b_star = np.conj(b)
     j = np.array([
@@ -569,8 +569,8 @@ def expt2norm_params(p_expt=p_expt_def,p_mat=p_si,verbose=True):
     θ = (κ_c*t_R).to(u.dimensionless).m # fractional power loss to coupling per round trip
     ω_l = (2*π*c/λ).to(u.THz) # laser frequency in radians/sec
     E_ph = (hbar*ω_l).to(u.eV)
-    D_e = ( ( kBT / q ) * μ_e ).to(u.cm***2 / u.second)
-    D_h = ( ( kBT / q ) * μ_h ).to(u.cm***2 / u.second)
+    D_e = ( ( kBT / q ) * μ_e ).to(u.cm**2 / u.second)
+    D_h = ( ( kBT / q ) * μ_h ).to(u.cm**2 / u.second)
     τ_xfc = ( ( λ / ( 4 * n_eff ) )**2 / D_e ).to(u.ps)
     τ_xfc_norm = (τ_xfc/τ_ph).to(u.dimensionless).m
     # fractional increase in thermal energy per TPA due to carrier removal work
