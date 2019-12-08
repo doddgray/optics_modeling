@@ -344,7 +344,7 @@ def jac_eigvals_sweep(Pa,Pb,Δ,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=30
                 # print(f'ind: {ind}')
                 # print(f'inds: {inds}')
                 # print(f'a[inds]: {a[inds]}')
-            j = jacobian(a[inds],b[inds],n[inds],T[inds],Δ=Δ[inds[0]],s=s,
+            j = jacobian(a[inds],b[inds],na[inds],nb[inds],T[inds],Δ=Δ[inds[0]],s=s,
                 γ=γ,μ=μ,r=r,ζ=ζ,τ_th=τ_th,η1=η1,η2=η2,τ_fc=τ_fc,χ=χ,α=α)
             try:
                 eigvals[inds,:] = np.linalg.eigvals(j)
