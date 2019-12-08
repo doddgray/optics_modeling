@@ -596,11 +596,11 @@ def expt2norm_params(p_expt=p_expt_def,p_mat=p_si,verbose=True):
 
     #### Normalization Constants ####
     # circulating field, a = ξ_a * \bar{a} in sqrt{watt/cm^2}
-    ξ_a = (1/np.sqrt(2*γ*v_g*τ_ph)).to(u.watt**(0.5)/u.cm)
+    ξ_a = (1/np.sqrt(γ*v_g*τ_ph)).to(u.watt**(0.5)/u.cm)
     # input/output fields, a = ξ_in * \bar{a} in sqrt{watt/cm^2}
-    ξ_in = np.sqrt( t_R**2 / ( 8 * γ * v_g * τ_ph**3 * θ ) ).to(u.watt**(0.5)/u.cm)
+    ξ_in = np.sqrt( t_R**2 / ( γ * v_g * τ_ph**3 * θ ) ).to(u.watt**(0.5)/u.cm)
     # carrier density, n = ξ_n * \bar{n} in cm^{-3}
-    ξ_n = (1 / ( μ * σ * v_g * τ_ph )).to(u.cm**-3)
+    ξ_n = ( 2 / ( μ * σ * v_g * τ_ph )).to(u.cm**-3)
     # fast time, for KCG consideration
     ξ_t = np.sqrt( β_2 * v_g * τ_ph ).to(u.ps)
     # thermal scaling between cavity linewidths/kelvin
