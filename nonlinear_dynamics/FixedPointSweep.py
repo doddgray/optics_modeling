@@ -265,7 +265,7 @@ def ss_vals(Pa,Pb,Δ=-20.,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=30.,η2
     Δ = np.expand_dims(Δ,1) # have to do this so that broadcasting works right
     na_ss = τ_fc * (χ * Pa**2 + α * Pa)
     nb_ss = τ_fc * (χ * Pb**2 + α * Pb)
-    T_ss = ζ * τ_th * ( η2 * r * ( Pa**2 + Pb**2 ) + η1 * r * α / χ ( Pa + Pb ) + 1 / μ * ( na_ss * Pa + nb_ss * Pb ) )
+    T_ss = ζ * τ_th * ( η2 * r * ( Pa**2 + Pb**2 ) + η1 * r * α / χ * ( Pa + Pb ) + 1 / μ * ( na_ss * Pa + nb_ss * Pb ) )
     Ba = (-1./2. + 1j*Δ - 1j*γ/2) + (1j - r) * Pa + (-1j - 1/μ) * na_ss + 1j * T_ss
     Bb = (-1./2. + 1j*Δ + 1j*γ/2) + (1j - r) * Pb + (-1j - 1/μ) * nb_ss + 1j * T_ss
     # ϕ_a = np.arccos(s/(np.abs(Ba) * np.sqrt(Pa))) - np.angle(Ba) ;

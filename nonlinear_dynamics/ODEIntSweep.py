@@ -111,7 +111,7 @@ def f_tuning(t,y,p,dΔdt):
     d_a_s_star = np.conjugate( ( -0.5 + 1j*Δ - 1j*δ_r/2.0) + ( -1/μ - 1j ) * n_s + (1j - r) * (a_s * a_s_star) + 1j*T ) * a_s_star + s
     d_n_c = -n_c / τ_fc + α * (a_c*a_c_star) + χ * (a_c*a_c_star)**2 + ( n_s - n_c ) / τ_xfc
     d_n_s = -n_s / τ_fc + α * (a_s*a_s_star) + χ * (a_s*a_s_star)**2 + ( n_c - n_s ) / τ_xfc
-    d_T = -T / τ_th + ζ * ( η2 * r * ( (a_c*a_c_star)**2 + (a_s*a_s_star)**2 ) + η1 * r * α / χ ( (a_c*a_c_star) + (a_s*a_s_star) ) + 1 / μ * ( (a_c*a_c_star) * n_c + (a_s*a_s_star) * n_s ) )
+    d_T = -T / τ_th + ζ * ( η2 * r * ( (a_c*a_c_star)**2 + (a_s*a_s_star)**2 ) + η1 * r * α / χ * ( (a_c*a_c_star) + (a_s*a_s_star) ) + 1 / μ * ( (a_c*a_c_star) * n_c + (a_s*a_s_star) * n_s ) )
     return [d_Δ, d_a_c, d_a_c_star, d_a_s, d_a_s_star , d_n_c, d_n_s, d_T]
 
 def f_tuning_old(t,y,p,dΔdt):
