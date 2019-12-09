@@ -265,10 +265,10 @@ def ss_vals(Pa,Pb,Δ=-20.,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=30.,η2
     Δ = np.expand_dims(Δ,1) # have to do this so that broadcasting works right
     # na_ss = τ_fc * (χ * Pa**2 + α * Pa)
     # nb_ss = τ_fc * (χ * Pb**2 + α * Pb)
-    ntot_ss = τ_fc * (χ * (Pa**2+Pb**2) + α * (Pa+Pb))
-    ndiff_ss = (χ * (Pa**2 - Pb**2) + α * (Pa-Pb)) / (1. / τ_fc + 2. / τ_xfc)
-    na_ss = (ntot_ss + n_diff_ss) # don't divide by two here to account for doubled density in unmixed limit.
-    nb_ss = (ntot_ss - n_diff_ss) # In mixed limit n_diff_ss is small and both feel ntot_ss, as in original model.
+    n_tot_ss = τ_fc * (χ * (Pa**2+Pb**2) + α * (Pa+Pb))
+    n_diff_ss = (χ * (Pa**2 - Pb**2) + α * (Pa-Pb)) / (1. / τ_fc + 2. / τ_xfc)
+    na_ss = (n_tot_ss + n_diff_ss) # don't divide by two here to account for doubled density in unmixed limit.
+    nb_ss = (n_tot_ss - n_diff_ss) # In mixed limit n_diff_ss is small and both feel ntot_ss, as in original model.
     T_ss = ζ * τ_th * ( η2 * r * ( Pa**2 + Pb**2 ) + η1 * r * α / χ * ( Pa + Pb ) + 1 / μ * ( na_ss * Pa + nb_ss * Pb ) )
     Ba = (-1./2. + 1j*Δ - 1j*γ/2) + (1j - r) * Pa + (-1j - 1/μ) * na_ss + 1j * T_ss
     Bb = (-1./2. + 1j*Δ + 1j*γ/2) + (1j - r) * Pb + (-1j - 1/μ) * nb_ss + 1j * T_ss
@@ -674,7 +674,7 @@ def expt2norm_params(p_expt=p_expt_def,p_mat=p_si,verbose=True):
         print(f"η1: {η1:1.3g}")
         print(f"η2: {η2:1.3g}")
         print(f"τ_fc_norm: {τ_fc_norm:1.3g}")
-        print(f"τ_xfc_norm: {τ_fc_norm:1.3g}")
+        print(f"τ_xfc_norm: {τ_xfc_norm:1.3g}")
         print(f"τ_th_norm: {τ_th_norm:1.3g}")
         print(f"ζ: {ζ:1.3g}")
         print(f"heat_capacity_volume_ratio: {heat_capacity_volume_ratio:1.3g}")
