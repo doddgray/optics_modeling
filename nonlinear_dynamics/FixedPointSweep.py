@@ -83,7 +83,7 @@ def run_mm_script_parallel(params=params):
     data_fname = params['name'] + '.csv'
     arg_list = [data_dir,data_fname,Δ_min,Δ_max,nΔ,params['s'],
         params['γ'],params['μ'],params['r'],params['ζ'],
-        params['τ_th'],params['η2'],params['τ_fc'],params['χ'],params['α'],params['η1'],params['τ_xfc']]
+        params['τ_th'],params['η2'],params['τ_fc'],params['χ'],params['α'],params['η1'],params['τ_xfc'],params['η']]
     cmd = [mm_script_fpath]+[f'{arg}' for arg in arg_list]
     # print('Δ_max:' + str(Δ_max))
     # print('Δ_min:' + str(Δ_min))
@@ -261,10 +261,14 @@ def load_2d_sweep(sweep_name='test',data_dir=data_dir,verbose=True,fpath=None):
         data = pickle.load(f)
     return data
 
-def ss_vals(Pa,Pb,Δ=-20.,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=30.,η2=8.,η1=15.,τ_fc=0.1,χ=10,α=10,**kwargs):
+def ss_vals(Pa,Pb,Δ=-20.,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=30.,η2=8.,η1=15.,τ_fc=0.1,τ_xfc=0.1,χ=10,α=10,**kwargs):
     Δ = np.expand_dims(Δ,1) # have to do this so that broadcasting works right
-    na_ss = τ_fc * (χ * Pa**2 + α * Pa)
-    nb_ss = τ_fc * (χ * Pb**2 + α * Pb)
+    # na_ss = τ_fc * (χ * Pa**2 + α * Pa)
+    # nb_ss = τ_fc * (χ * Pb**2 + α * Pb)
+    ntot_ss = τ_fc * (χ * (Pa**2+Pb**2) + α * (Pa+Pb))
+    ndiff_ss = (χ * (Pa**2 - Pb**2) + α * (Pa-Pb)) / (1. / τ_fc + 2. / τ_xfc)
+    na_ss = (ntot_ss + n_diff_ss) # don't divide by two here to account for doubled density in unmixed limit.
+    nb_ss = (ntot_ss - n_diff_ss) # In mixed limit n_diff_ss is small and both feel ntot_ss, as in original model.
     T_ss = ζ * τ_th * ( η2 * r * ( Pa**2 + Pb**2 ) + η1 * r * α / χ * ( Pa + Pb ) + 1 / μ * ( na_ss * Pa + nb_ss * Pb ) )
     Ba = (-1./2. + 1j*Δ - 1j*γ/2) + (1j - r) * Pa + (-1j - 1/μ) * na_ss + 1j * T_ss
     Bb = (-1./2. + 1j*Δ + 1j*γ/2) + (1j - r) * Pb + (-1j - 1/μ) * nb_ss + 1j * T_ss
@@ -277,7 +281,7 @@ def ss_vals(Pa,Pb,Δ=-20.,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=30.,η2
     return a_ss, b_ss, na_ss, nb_ss, T_ss
     #return a_ss, b_ss, n_ss, T_ss,Ba,Bb,ϕ_a,ϕ_b
 
-def jacobian(a,b,na,nb,T,Δ=-20.,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=30.,η2=8.,η1=15.,τ_fc=0.1,χ=5.,α=10,):
+def jacobian(a,b,na,nb,T,Δ=-20.,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=30.,η2=8.,η1=15.,τ_fc=0.1,τ_xfc=0.1,χ=5.,α=10,):
     a_star = np.conj(a)
     b_star = np.conj(b)
     j = np.array([
@@ -313,13 +317,15 @@ def jacobian(a,b,na,nb,T,Δ=-20.,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=
             2. * a**2 * a_star * χ + a * α,
             0.,
             0.,
-            -(1./τ_fc),
+            -(1./τ_fc)-(1./τ_xfc),
+            (1./τ_xfc),
             0.],
         [0.,
             0.,
             2. * b * b_star**2 * χ + b_star * α,
             2. * b**2 * b_star * χ + b * α,
-            -(1./τ_fc),
+            (1./τ_xfc),
+            -(1./τ_fc)-(1./τ_xfc),
             0.],
         [(a_star * ζ * (na / μ + 2. * a * a_star * r * η2 +  r * η1 * α / χ)),
             (a * ζ * (na / μ + 2. * a * a_star * r * η2 +  r * η1 * α / χ)),
@@ -330,13 +336,13 @@ def jacobian(a,b,na,nb,T,Δ=-20.,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=
             -(1./τ_th)]])
     return j
 
-def jac_eigvals_sweep(Pa,Pb,Δ,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=30.,η2=8.,η1=15.,τ_fc=0.1,χ=5.,α=10,n_eqs=7,verbose=True,**kwargs):
+def jac_eigvals_sweep(Pa,Pb,Δ,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=30.,η2=8.,η1=15.,τ_fc=0.1,τ_xfc=0.1,χ=5.,α=10,n_eqs=7,verbose=True,**kwargs):
     m = n_eqs,
     eigvals = np.zeros(Pa.shape+m,dtype=np.complex128)
     det_j = np.zeros(Pa.shape,dtype=np.float64)
     L = np.zeros(Pa.shape,dtype=np.float64)
     a,b,na,nb,T = ss_vals(Pa,Pb,Δ=Δ,s=s,γ=γ,
-                μ=μ,r=r,ζ=ζ,τ_th=τ_th,η1=η1,η2=η2,τ_fc=τ_fc,χ=χ,α=α)
+                μ=μ,r=r,ζ=ζ,τ_th=τ_th,η1=η1,η2=η2,τ_fc=τ_fc,τ_xfc=τ_xfc,χ=χ,α=α)
     for ind in range(Pa.size):
         if Pa.ravel()[ind]:
             inds = np.unravel_index(ind,Pa.shape)
@@ -345,7 +351,7 @@ def jac_eigvals_sweep(Pa,Pb,Δ,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=30
                 # print(f'inds: {inds}')
                 # print(f'a[inds]: {a[inds]}')
             j = jacobian(a[inds],b[inds],na[inds],nb[inds],T[inds],Δ=Δ[inds[0]],s=s,
-                γ=γ,μ=μ,r=r,ζ=ζ,τ_th=τ_th,η1=η1,η2=η2,τ_fc=τ_fc,χ=χ,α=α)
+                γ=γ,μ=μ,r=r,ζ=ζ,τ_th=τ_th,η1=η1,η2=η2,τ_fc=τ_fc,τ_xfc=τ_xfc,χ=χ,α=α)
             try:
                 eigvals[inds,:] = np.linalg.eigvals(j)
                 det_j[inds] = np.linalg.det(j)
@@ -557,21 +563,24 @@ def expt2norm_params(p_expt=p_expt_def,p_mat=p_si,verbose=True):
     t_R = (1/FSR).to(u.ps) # round trip time
     n_g = (c / ( π * d_ring * FSR )).to(u.dimensionless).m # group index from measured FSR
     v_g = c / n_g # group velocity
+    V_mode = (π * d_ring * A).to(u.cm**3) # mode volume
     κ = 2*π * FWHM # αL + θ, full measured linewidth
     τ_ph = (1 / κ).to(u.ps) # photon lifetime in microring
     κ_min = 2*π * FWHM_i # linewidth limit in super undercoupled regime
 #     αL = (κ_min*t_R).to(u.dimensionless).m # fractional power lost per round trip, should be ~0.2%
 #     α = α_dB/(10*np.log(10)) # measured loss in units of 1/cm
 #     κ_min =  α * d_ring / t_R # intrinsic linewidth due to loss
-    κ_c = κ - κ_min # coupling rate to bus waveguide in radians/sec
+    κ_c_tot = κ - κ_min # total coupling rate to bus waveguide (fwd and backward propagating) in radians/sec
+    κ_c = κ_c_tot / 2. # coupling rate between fwd-propagating bus mode and s.w. modes, assuming both modes are evenly coupled fwd and backward to bus
     κ_c_Hz = κ_c/(2*π) # coupling rate to bus waveguide in GHz
     δ_r = (splitting / FWHM).to(u.dimensionless).m # normalized splitting in units of individual mode linewidth
     θ = (κ_c*t_R).to(u.dimensionless).m # fractional power loss to coupling per round trip
+    η = (κ_c / κ).to(u.dimensionless).m # fraction of linewidth attributed to coupling to fwd. prop. bus w.g. mode
     ω_l = (2*π*c/λ).to(u.THz) # laser frequency in radians/sec
     E_ph = (hbar*ω_l).to(u.eV)
     D_e = ( ( kBT / q ) * μ_e ).to(u.cm**2 / u.second)
     D_h = ( ( kBT / q ) * μ_h ).to(u.cm**2 / u.second)
-    τ_xfc = ( ( λ / ( 4 * n_eff ) )**2 / D_e ).to(u.ps)
+    τ_xfc = ( ( λ / ( 2 * n_eff ) )**2 / D_e ).to(u.ps)
     τ_xfc_norm = (τ_xfc/τ_ph).to(u.dimensionless).m
     # fractional increase in thermal energy per TPA due to carrier removal work
     η2 = Vrb2η(V_rb,n_ph_abs=2,λ=λ)
@@ -598,13 +607,16 @@ def expt2norm_params(p_expt=p_expt_def,p_mat=p_si,verbose=True):
     # circulating field, a = ξ_a * \bar{a} in sqrt{watt/cm^2}
     ξ_a = (1/np.sqrt(γ*v_g*τ_ph)).to(u.watt**(0.5)/u.cm)
     # input/output fields, a = ξ_in * \bar{a} in sqrt{watt/cm^2}
-    ξ_in = np.sqrt( t_R**2 / ( γ * v_g * τ_ph**3 * θ ) ).to(u.watt**(0.5)/u.cm)
+    # ξ_in = np.sqrt( t_R**2 / ( γ * v_g * τ_ph**3 * θ ) ).to(u.watt**(0.5)/u.cm)
+    ξ_in = np.sqrt( t_R / ( γ * v_g * τ_ph**2 ) ).to(u.watt**(0.5)/u.cm)
     # carrier density, n = ξ_n * \bar{n} in cm^{-3}
     ξ_n = ( 2 / ( μ * σ * v_g * τ_ph )).to(u.cm**-3)
     # fast time, for KCG consideration
     ξ_t = np.sqrt( β_2 * v_g * τ_ph ).to(u.ps)
     # thermal scaling between cavity linewidths/kelvin
     ξ_T = ( 1 / ( δ_T * v_g * τ_ph ) ).to(u.degK)
+    # photodiode current coefficient, expect I_pd = ξ_I * ( χ (|\bar{a}|^4 + |\bar{b}|^4) + α (|\bar{a}|^2 + |\bar{b}|^2) ), μA
+    ξ_I = ( q * V_mode * ξ_n /  τ_ph  ).to(u.microampere)
 
     #### normalized input power range ####
     I_bus_max = P_bus_max / A
@@ -633,6 +645,7 @@ def expt2norm_params(p_expt=p_expt_def,p_mat=p_si,verbose=True):
     p_expt['heat_capacity_volume_ratio'] = heat_capacity_volume_ratio
     p_expt['χ'] = χ
     p_expt['E_ph'] = E_ph
+    p_expt['V_mode'] = V_mode
     p_expt['δ_T'] = δ_T
     p_expt['n_g'] = n_g
     p_expt['P_bus'] = P_bus
@@ -644,10 +657,12 @@ def expt2norm_params(p_expt=p_expt_def,p_mat=p_si,verbose=True):
     p_expt['τ_ph'] = τ_ph
     p_expt['t_R'] = t_R
     p_expt['θ'] = θ
+    p_expt['η'] = η
     p_expt['ξ_a'] = ξ_a
     p_expt['ξ_in'] = ξ_in
     p_expt['ξ_n'] = ξ_n
     p_expt['ξ_T'] = ξ_T
+    p_expt['ξ_I'] = ξ_I
     p_expt['ξ_t'] = ξ_t
     p_expt['α_abs'] = α_abs
     p_expt['α_abs_norm'] = α_abs_norm
@@ -676,11 +691,14 @@ def expt2norm_params(p_expt=p_expt_def,p_mat=p_si,verbose=True):
         print(f"δ_T: {δ_T:1.3g}")
         print(f"n_g: {n_g:1.3g}")
         print(f"θ: {θ:1.3g}")
+        print(f"η: {η:1.3g}")
+        print(f"V_mode: {V_mode:1.3g}")
 
         print(f"ξ_a: {ξ_a:1.3g}")
         print(f"ξ_in: {ξ_in:1.3g}")
         print(f'ξ_n: {ξ_n:1.3e}')
         print(f"ξ_T: {ξ_T:1.3g}")
+        print(f"ξ_I: {ξ_I:1.3g}")
         print(f"ξ_t: {ξ_t:1.3g}")
 
 ### Old manual p_norm values for reference
@@ -709,6 +727,7 @@ def expt2norm_params(p_expt=p_expt_def,p_mat=p_si,verbose=True):
               'χ': n_sig_figs(χ,n_sf),
               'α': n_sig_figs(α_abs_norm,n_sf),
               'η1': n_sig_figs(η1,n_sf),
+              'η': n_sig_figs(η,n_sf), # this is the coupling efficiency
              }
 
     p_expt['p_norm'] = p_norm
