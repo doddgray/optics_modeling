@@ -47,8 +47,11 @@ data_fname = 'test_data_fname.csv'
 base_mm_script_fname = 'FixedPointSweepSkeletonScript.wls'
 
 def n_sig_figs(x,n):
-    return round(x, -int(floor(log10(abs(x)))) + (n - 1))
-
+    if (np.abs(x) > 1e-10):
+        return round(x, -int(floor(log10(abs(x)))) + (n - 1))
+    else:
+        return 0.
+        
 params = {'Δ':np.arange(-130,20.25,0.25),
           's':np.arange(0,4,0.1),
           'γ':2.,
