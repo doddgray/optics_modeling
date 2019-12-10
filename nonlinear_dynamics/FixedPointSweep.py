@@ -83,44 +83,10 @@ def run_mm_script_parallel(params=params):
     data_fname = params['name'] + '.csv'
     arg_list = [data_dir,data_fname,Δ_min,Δ_max,nΔ,params['s'],
         params['γ'],params['μ'],params['r'],params['ζ'],
-        params['τ_th'],params['η2'],params['τ_fc'],params['χ'],params['α'],params['η1'],params['τ_xfc'],params['η']]
+        params['τ_th'],params['η2'],params['τ_fc'],params['χ'],params['α'],params['η1'],params['τ_xfc'],params['η'],params['wp']]
     cmd = [mm_script_fpath]+[f'{arg}' for arg in arg_list]
-    # print('Δ_max:' + str(Δ_max))
-    # print('Δ_min:' + str(Δ_min))
-    # print('d_Δ:' + str(d_Δ))
-    # print('cmd: ' + str(cmd))
     out = subp.run(cmd,check=True)
     return out.returncode
-    # # try:
-    # Pa_ss,Pb_ss = import_mm_data(path.join(data_dir,data_fname))
-    # a_ss,b_ss,n_ss,T_ss,eigvals_ss,det_j_ss,L_ss = jac_eigvals_sweep(Pa_ss,Pb_ss,**params)
-    # res = {'Pa':Pa_ss,
-    #         'Pb':Pb_ss,
-    #         'a':a_ss,
-    #         'b':b_ss,
-    #         'n':n_ss,
-    #         'T':T_ss,
-    #         'eigvals':eigvals_ss,
-    #         'det_j':det_j_ss,
-    #         'L':L_ss,
-    #         'mm_out':out,
-    # }
-    # return res
-    # # except:
-    # #     nΔ = len(params['Δ'])
-    # #     print('python processing fail, '+params['name'])
-    # #     res = {'Pa':np.zeros((nΔ,6),dtype=np.float64),
-    # #             'Pb':np.zeros((nΔ,6),dtype=np.float64),
-    # #             'a':np.zeros((nΔ,6),dtype=np.complex128),
-    # #             'b':np.zeros((nΔ,6),dtype=np.complex128),
-    # #             'n':np.zeros((nΔ,6),dtype=np.float64),
-    # #             'T':np.zeros((nΔ,6),dtype=np.float64),
-    # #             'eigvals':np.zeros((nΔ,6,6),dtype=np.complex128),
-    # #             'det_j':np.zeros((nΔ,6),dtype=np.float64),
-    # #             'L':np.zeros((nΔ,6),dtype=np.float64),
-    # #             'mm_out':out,
-    # #     }
-    # # return res
 
 def process_mm_data_parallel(params=params):
     data_dir = params['data_dir']
@@ -546,6 +512,7 @@ def expt2norm_params(p_expt=p_expt_def,p_mat=p_si,verbose=True):
     splitting = p_expt['splitting']
     β_2 = p_expt['β_2']
     τ_th_norm_ζ_product = p_expt['τ_th_norm_ζ_product']
+    wp = int(p_expt['working_precision'])
     # mathematica solver Parameters
     n_sf = p_expt['n_sf'] # number of significant figures to leave in the normalized parameters passed to mathematica. the fewer, the faster
     δs = p_expt['δs'] # s step size (sqrt normalized input power)
@@ -617,6 +584,9 @@ def expt2norm_params(p_expt=p_expt_def,p_mat=p_si,verbose=True):
     ξ_T = ( 1 / ( δ_T * v_g * τ_ph ) ).to(u.degK)
     # photodiode current coefficient, expect I_pd = ξ_I * ( χ (|\bar{a}|^4 + |\bar{b}|^4) + α (|\bar{a}|^2 + |\bar{b}|^2) ), μA
     ξ_I = ( q * V_mode * ξ_n /  τ_ph  ).to(u.microampere)
+    #  input and circulating power normalizations
+    ξ_P_in = (ξ_in**2 * A).to(u.mW)
+    ξ_P_circ = (ξ_a**2 * A).to(u.mW)
 
     #### normalized input power range ####
     I_bus_max = P_bus_max / A
@@ -656,10 +626,17 @@ def expt2norm_params(p_expt=p_expt_def,p_mat=p_si,verbose=True):
     p_expt['τ_th'] = τ_th
     p_expt['τ_ph'] = τ_ph
     p_expt['t_R'] = t_R
+    p_expt['τ_fc_norm'] = τ_fc_norm
+    p_expt['τ_xfc_norm'] = τ_xfc_norm
+    p_expt['τ_th_norm'] = τ_th_norm
+    p_expt['τ_ph'] = τ_ph
+    p_expt['t_R_norm'] = (t_R / τ_ph).to(u.dimensionless).m
     p_expt['θ'] = θ
     p_expt['η'] = η
     p_expt['ξ_a'] = ξ_a
     p_expt['ξ_in'] = ξ_in
+    p_expt['ξ_P_circ'] = ξ_P_circ
+    p_expt['ξ_P_in'] = ξ_P_in
     p_expt['ξ_n'] = ξ_n
     p_expt['ξ_T'] = ξ_T
     p_expt['ξ_I'] = ξ_I
@@ -696,6 +673,8 @@ def expt2norm_params(p_expt=p_expt_def,p_mat=p_si,verbose=True):
 
         print(f"ξ_a: {ξ_a:1.3g}")
         print(f"ξ_in: {ξ_in:1.3g}")
+        print(f"ξ_P_circ: {ξ_P_circ:1.3g}")
+        print(f"ξ_P_in: {ξ_P_in:1.3g}")
         print(f'ξ_n: {ξ_n:1.3e}')
         print(f"ξ_T: {ξ_T:1.3g}")
         print(f"ξ_I: {ξ_I:1.3g}")
@@ -728,6 +707,7 @@ def expt2norm_params(p_expt=p_expt_def,p_mat=p_si,verbose=True):
               'α': n_sig_figs(α_abs_norm,n_sf),
               'η1': n_sig_figs(η1,n_sf),
               'η': n_sig_figs(η,n_sf), # this is the coupling efficiency
+              'wp': int(wp), # WorkingPrecision argument for Mathematica NSolve
              }
 
     p_expt['p_norm'] = p_norm
@@ -902,6 +882,30 @@ def load_PVΔ_sweep(sweep_name='test',data_dir=data_dir,verbose=True,fpath=None)
         Δ_max_norm = int( np.ceil( ( 2*np.pi * metadata['Δ_max'] * metadata['τ_ph'] ).to(u.dimensionless).m ) )
         Δ_norm = np.arange(Δ_min_norm,Δ_max_norm,metadata['δΔ'])
         metadata['Δ'] = ( Δ_norm / ( 2*np.pi * metadata['τ_ph'] ) ).to(u.GHz)
+    ### calculate unitful quantities for direct comparison with experiment
+    # # metadata['η'] = 0.221           # temporary! remove later
+    # # metadata['ξ_I'] = 5.5 * u.uA    # temporary! remove later
+    metadata['P_out'] = (metadata['ξ_in']**2 * metadata['A'] * np.abs( metadata['s'][:,np.newaxis,np.newaxis,np.newaxis] - np.sqrt(metadata['η']) * ( metadata['b'] + metadata['a'] ) )**2).to(u.mW)
+    metadata['T'] =  np.abs( metadata['s'][:,np.newaxis,np.newaxis,np.newaxis] - np.sqrt(metadata['η']) * ( metadata['b'] + metadata['a'] ) )**2 / (metadata['s'][:,np.newaxis,np.newaxis,np.newaxis]**2)
+    metadata['I_pd'] = metadata['ξ_I'] * ( metadata['χ'] * ( metadata['Pa']**2 + metadata['Pb']**2 ) + metadata['α_abs_norm'] * ( metadata['Pa'] + metadata['Pb'] )  )
+    ### count solutions and stable solutions
+    d = metadata # for brevity
+    Δ = d['Δ']
+    nΔ = len(Δ)
+    P_bus = d['P_bus']
+    nP = len(P_bus)
+    n_sols = np.zeros(d['eigvals'][:,:,:,0,0].shape,dtype='int')
+    stable = np.zeros(d['eigvals'][:,:,:,:,0].shape,dtype='int')
+    for Pind in range(nP):
+        for dind in range(nΔ):
+            n_sols[Pind,Vind,dind] = len(d['Pa'][Pind,Vind,dind,d['Pa'][Pind,Vind,dind,:]>0.])
+        for sol_ind in range(n_sols[Pind,Vind,dind]):
+            lhp = d['eigvals'][Pind,Vind,dind,sol_ind].real < 1e-6
+            stable[Pind,Vind,dind,sol_ind] = int(lhp.all())
+    d['nΔ'] = nΔ
+    d['nP'] = nP
+    d['n_sols'] = n_sols
+    d['stable'] = stable
     return metadata
 
 ################################################################################
