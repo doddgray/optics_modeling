@@ -26,7 +26,7 @@ Subscript[ntot, ss]:=\[Chi] Subscript[\[Tau], fc](Pa^2+Pb^2) + \[Alpha] Subscrip
 Subscript[ndiff, ss]:=(\[Chi](Pa^2-Pb^2) + \[Alpha](Pa-Pb))/( 1/Subscript[\[Tau], fc] +  2/Subscript[\[Tau], xfc]);
 Subscript[na, ss]:= Subscript[ntot, ss] + Subscript[ndiff, ss];
 Subscript[nb, ss]:= Subscript[ntot, ss] - Subscript[ndiff, ss];
-Subscript[T, ss]:= \[Zeta] Subscript[\[Tau], th](\[Rho] r(Pa^2+Pb^2)+ \[Psi] \[Alpha] r (Pa+Pb)/\[Chi] + ( Subscript[na, ss]Pa + Subscript[nb, ss]Pb )/\[Mu]);
+Subscript[T, ss]:= \[Zeta] Subscript[\[Tau], th](\[Rho] r(Pa^2+Pb^2)+ \[Psi] \[Alpha] r (Pa+Pb)/(2\[Chi]) + ( Subscript[na, ss]Pa + Subscript[nb, ss]Pb )/\[Mu]);
 Ba:=(-(1/2)+ \[CapitalDelta] I-\[Gamma]/2 I)+(I-r)Pa+(-I-1/\[Mu])Subscript[na, ss]+Subscript[T, ss] I // ComplexExpand;
 Bb:=(-(1/2)+ \[CapitalDelta] I+\[Gamma]/2 I)+(I-r)Pb+(-I-1/\[Mu])Subscript[nb, ss]+Subscript[T, ss] I // ComplexExpand;
 RHSa = Assuming[Pa>=0&& Pb>=0 &&s>=0 &&\[Gamma]>0 &&\[Mu]>0 &&r>0 &&Subscript[\[Tau], th]>0 &&\[Zeta]>0 &&\[Eta]>0 &&\[Chi]>0 &&Subscript[\[Tau], fc]>0 && \[CapitalDelta] \[Element]Reals,Simplify[(Re[Ba]^2+Im[Ba]^2)Pa - \[Eta] s^2]]; 

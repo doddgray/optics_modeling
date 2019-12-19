@@ -51,7 +51,7 @@ def n_sig_figs(x,n):
         return round(x, -int(floor(log10(abs(x)))) + (n - 1))
     else:
         return 0.
-        
+
 params = {'Δ':np.arange(-130,20.25,0.25),
           's':np.arange(0,4,0.1),
           'γ':2.,
@@ -127,11 +127,14 @@ def process_mm_data_parallel(params=params):
             }
     return res
 
-def process_mm_data_line(line,ncol=14):
+def process_mm_data_line(line,ncol=14,precision=True):
     line_proc = line.replace('{Pa -> ','').replace('Pb -> ','').replace('}','').replace('"','').replace('*^','e')
     for iter in range(ncol + 1 - len(line_proc.split(','))):
         line_proc = line_proc[:-1] + ',' + line_proc[-1]
-    final_line = ','.join([x.strip() if x else '0.0' for x in  line_proc.split(',')[:-1]])+'\n'
+    entries = [x.strip() if x else '0.0' for x in  line_proc.split(',')[:-1]]
+    new_entries = [x.split('`')[0] + 'e' + x.split('e')[-1] if len(x.split('e'))>1 else x.split('`')[0] for x in entries]
+    final_line = ','.join(new_entries)+'\n'
+    # final_line = ','.join([x.strip() if x else '0.0' for x in  line_proc.split(',')[:-1]])+'\n'
     return final_line
 
 def import_mm_data(data_fname,data_dir=data_dir,ncol=14):
@@ -579,14 +582,14 @@ def expt2norm_params(p_expt=p_expt_def,p_mat=p_si,verbose=True):
     # input/output fields, a = ξ_in * \bar{a} in sqrt{watt/cm^2}
     # ξ_in = np.sqrt( t_R**2 / ( γ * v_g * τ_ph**3 * θ ) ).to(u.watt**(0.5)/u.cm)
     ξ_in = np.sqrt( t_R / ( γ * v_g * τ_ph**2 ) ).to(u.watt**(0.5)/u.cm)
-    # carrier density, n = ξ_n * \bar{n} in cm^{-3}
+    # e-h pair density, n = ξ_n * \bar{n} in cm^{-3}
     ξ_n = ( 2 / ( μ * σ * v_g * τ_ph )).to(u.cm**-3)
     # fast time, for KCG consideration
     ξ_t = np.sqrt( β_2 * v_g * τ_ph ).to(u.ps)
     # thermal scaling between cavity linewidths/kelvin
     ξ_T = ( 1 / ( δ_T * v_g * τ_ph ) ).to(u.degK)
     # photodiode current coefficient, expect I_pd = ξ_I * ( χ (|\bar{a}|^4 + |\bar{b}|^4) + α (|\bar{a}|^2 + |\bar{b}|^2) ), μA
-    ξ_I = ( q * V_mode * ξ_n /  τ_ph  ).to(u.microampere)
+    ξ_I = ( q * V_mode * ξ_n / τ_ph ).to(u.microampere)
     #  input and circulating power normalizations
     ξ_P_in = (ξ_in**2 * A).to(u.mW)
     ξ_P_circ = (ξ_a**2 * A).to(u.mW)
@@ -889,7 +892,7 @@ def load_PVΔ_sweep(sweep_name='test',data_dir=data_dir,verbose=True,fpath=None)
     # # metadata['η'] = 0.221           # temporary! remove later
     # # metadata['ξ_I'] = 5.5 * u.uA    # temporary! remove later
     metadata['P_out'] = (metadata['ξ_in']**2 * metadata['A'] * np.abs( metadata['s'][:,np.newaxis,np.newaxis,np.newaxis] - np.sqrt(metadata['η']) * ( metadata['b'] + metadata['a'] ) )**2).to(u.mW)
-    metadata['T'] =  np.abs( metadata['s'][:,np.newaxis,np.newaxis,np.newaxis] - np.sqrt(metadata['η']) * ( metadata['b'] + metadata['a'] ) )**2 / (metadata['s'][:,np.newaxis,np.newaxis,np.newaxis]**2)
+    metadata['Trans'] =  np.abs( metadata['s'][:,np.newaxis,np.newaxis,np.newaxis] - np.sqrt(metadata['η']) * ( metadata['b'] + metadata['a'] ) )**2 / (metadata['s'][:,np.newaxis,np.newaxis,np.newaxis]**2)
     metadata['I_pd'] = metadata['ξ_I'] * ( metadata['χ'] * ( metadata['Pa']**2 + metadata['Pb']**2 ) + metadata['α_abs_norm'] * ( metadata['Pa'] + metadata['Pb'] )  )
     ### count solutions and stable solutions
     d = metadata # for brevity
@@ -910,6 +913,131 @@ def load_PVΔ_sweep(sweep_name='test',data_dir=data_dir,verbose=True,fpath=None)
     d['n_sols'] = n_sols
     d['stable'] = stable
     return metadata
+
+def reprocess_PVΔ_sweep(sweep_name='test',nEq=7,n_proc=n_proc_def,data_dir=data_dir,verbose=True,return_data=False,fpath=None):
+    """
+    Find steady state solutions and corresponding Jacobian eigenvalues
+    for the specified normalized 2-mode+free-carrier+thermal microring model
+    parameters over the range of cold-cavity detuning (Δ), input power (s^2) and Vrb
+    values supplied.
+    """
+    if not(fpath):
+        file_list =  glob(path.normpath(data_dir)+path.normpath('/MM_PVDsweep_' + sweep_name + '*'))
+        sweep_dir = max(file_list,key=path.getctime)
+    else:
+        sweep_dir = fpath
+    if verbose:
+        print('Loading ' + sweep_name +' sweep data from path: ' + path.basename(path.normpath(sweep_dir)))
+    latest_metadata_file = sweep_dir + '/metadata.dat'
+    with open( latest_metadata_file, "rb" ) as f:
+        metadata = pickle.load(f)
+    V_rb = metadata['V_rb']
+    nV = len(V_rb)
+    pV0 = metadata.copy()
+    pV0['V_rb'] = V_rb[0]
+    expt2norm_params(p_expt=pV0,p_mat=p_si,verbose=False)
+    metadata.update(pV0)
+    metadata['V_rb'] = V_rb
+    P_bus = metadata['P_bus']
+    nP = len(P_bus)
+    p_expt = metadata
+    p_mat = p_si
+    sweep_data_fname = 'data.dat'
+    sweep_data_fpath = path.join(sweep_dir,sweep_data_fname)
+    mfname = 'metadata.dat'
+    mfpath = path.join(sweep_dir,mfname)
+    # add a couple other things to kwargs and save as a metadata dict
+    # nV = len(p_expt['V_rb'])
+    metadata['nV'] = nV
+    t_start = time()
+    start_timestamp_str = datetime.strftime(datetime.now(),'%Y_%m_%d_%H_%M_%S')
+    metadata['t_start'] = start_timestamp_str
+    params_list = []
+    V_params_list = []
+    # with open(mfpath, 'wb') as f:
+    #     pickle.dump(metadata,f)
+    for Vind, VV in enumerate(metadata['V_rb']):
+        V_dir_name = f'V{Vind}'
+        V_dir = path.normpath(path.join(sweep_dir,V_dir_name))
+        # makedirs(V_dir)
+        V_data_fname = f'V{Vind}_data.dat'
+        V_data_fpath = path.join(V_dir,V_data_fname)
+        V_params_fname = f'V{Vind}_params.dat'
+        V_params_fpath = path.join(V_dir,V_params_fname)
+        # add a couple other things to kwargs and save as a metadata dict
+        V_params = p_expt.copy()
+        V_params['V_rb'] = VV
+        V_params.update(p_mat)
+        start_timestamp_str = datetime.strftime(datetime.now(),'%Y_%m_%d_%H_%M_%S')
+        V_params['t_start'] = start_timestamp_str
+        if verbose:
+            print('##########################################################')
+            print(f'V: {VV.m:2.2f} V, Vind: {Vind}')
+        expt2norm_params(p_expt=V_params,p_mat=p_mat,verbose=verbose)
+        if Vind==0:
+            V_params_list = [[] for x in range(nV)]
+            nΔ = len(V_params['p_norm']['Δ'])
+            ns = len(V_params['p_norm']['s'])
+        V_params['nΔ'] = nΔ
+        V_params['ns'] = ns
+        V_params_list[Vind] = V_params
+        V_params_ss_list = [[] for sind in range(ns)]
+        for sind, ss in enumerate(V_params['p_norm']['s']):
+            # timestamp_str = datetime.strftime(datetime.now(),'%Y_%m_%d_%H_%M_%S')
+            V_params_ss_list[sind] = V_params['p_norm'].copy()
+            V_params_ss_list[sind]['s'] = ss
+            # ss_fname = f's{sind}_' + timestamp_str + '.csv'
+            V_params_ss_list[sind]['name'] = f's{sind}'
+            V_params_ss_list[sind]['data_dir'] = V_dir
+            params_list.append(V_params_ss_list[sind])
+    with Pool(processes=n_proc) as pool:
+        res = pool.map(process_mm_data_parallel,params_list)
+    for Vind, VV in enumerate(p_expt['V_rb']):
+        # fill in dataset arrays, creating them first if Vind==0
+        if Vind==0:
+            Pa = np.zeros((ns,nV,nΔ,nEq),dtype=np.float64)
+            Pb = np.zeros((ns,nV,nΔ,nEq),dtype=np.float64)
+            a = np.zeros((ns,nV,nΔ,nEq),dtype=np.complex128)
+            b = np.zeros((ns,nV,nΔ,nEq),dtype=np.complex128)
+            na = np.zeros((ns,nV,nΔ,nEq),dtype=np.float64)
+            nb = np.zeros((ns,nV,nΔ,nEq),dtype=np.float64)
+            T = np.zeros((ns,nV,nΔ,nEq),dtype=np.float64)
+            eigvals = np.zeros((ns,nV,nΔ,nEq,nEq),dtype=np.complex128)
+            det_j = np.zeros((ns,nV,nΔ,nEq),dtype=np.float64)
+            L = np.zeros((ns,nV,nΔ,nEq),dtype=np.float64)
+        for sind in range(ns):
+            flat_index = int(np.ravel_multi_index((Vind,sind),(nV,ns)))
+            Pa[sind,Vind,:] = res[flat_index]['Pa']
+            Pb[sind,Vind,:] = res[flat_index]['Pb']
+            a[sind,Vind,:] = res[flat_index]['a']
+            b[sind,Vind,:] = res[flat_index]['b']
+            na[sind,Vind,:] = res[flat_index]['na']
+            nb[sind,Vind,:] = res[flat_index]['nb']
+            T[sind,Vind,:] = res[flat_index]['T']
+            eigvals[sind,Vind,:] = res[flat_index]['eigvals']
+            det_j[sind,Vind,:] = res[flat_index]['det_j']
+            L[sind,Vind,:] = res[flat_index]['L']
+        # save data
+        V_data = {'Pa':Pa[:,Vind],'Pb':Pb[:,Vind],'a':a[:,Vind],'b':b[:,Vind],'na':na[:,Vind],'nb':nb[:,Vind],'T':T[:,Vind],
+            'eigvals':eigvals[:,Vind],'det_j':det_j[:,Vind],'L':L[:,Vind],**V_params}
+        with open(V_data_fpath, 'wb') as f:
+            pickle.dump(V_data,f)
+        data = {'Pa':Pa,'Pb':Pb,'a':a,'b':b,'na':na,'nb':nb,'T':T,
+            'eigvals':eigvals,'det_j':det_j,'L':L,'V_params':V_params_list,**metadata}
+        with open(sweep_data_fpath, 'wb') as f:
+            pickle.dump(data,f)
+    stop_timestamp_str = datetime.strftime(datetime.now(),'%Y_%m_%d_%H_%M_%S')
+    t_elapsed_sec = time()-t_start
+    if verbose:
+        print('PVΔ sweep reprocessing finished at ' + stop_timestamp_str)
+    metadata['t_stop'] = stop_timestamp_str
+    metadata['t_elapsed_sec'] = t_elapsed_sec
+    with open(mfpath, 'wb') as f:
+        pickle.dump(metadata,f)
+    if return_data:
+        return data
+
+
 
 ################################################################################
 ##
