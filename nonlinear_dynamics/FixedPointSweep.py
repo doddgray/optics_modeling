@@ -91,13 +91,14 @@ def run_mm_script_parallel(params=params):
     out = subp.run(cmd,check=True)
     return out.returncode
 
-def process_mm_data_parallel(params=params):
+def process_mm_data_parallel(params=params,nEq=6):
     data_dir = params['data_dir']
     data_fname = params['name'] + '.csv'
     data_fpath = path.normpath(path.join(data_dir,data_fname))
     if path.exists(data_fpath):
         Pa_ss,Pb_ss = import_mm_data(path.join(data_dir,data_fname))
-        a_ss,b_ss,na_ss,nb_ss,T_ss,eigvals_ss,det_j_ss,L_ss = jac_eigvals_sweep(Pa_ss,Pb_ss,**params)
+        # a_ss,b_ss,na_ss,nb_ss,T_ss,eigvals_ss,det_j_ss,L_ss = jac_eigvals_sweep(Pa_ss,Pb_ss,**params)
+        a_ss,b_ss,n_ss,T_ss,eigvals_ss,det_j_ss,L_ss,a_out_ss,Po_ss = jac_eigvals_sweep(Pa_ss,Pb_ss,**params)
         res = {'Pa':Pa_ss,
                 'Pb':Pb_ss,
                 'a':a_ss,
@@ -108,26 +109,30 @@ def process_mm_data_parallel(params=params):
                 'eigvals':eigvals_ss,
                 'det_j':det_j_ss,
                 'L':L_ss,
+                'a_o':a_out_ss,
+                'Po':Po_ss,
                 # 'mm_out':out,
         }
     else:
         nΔ = len(params['Δ'])
         print('no file found, '+params['name'])
-        res = {'Pa':np.zeros((nΔ,7),dtype=np.float64),
-                'Pb':np.zeros((nΔ,7),dtype=np.float64),
-                'a':np.zeros((nΔ,7),dtype=np.complex128),
-                'b':np.zeros((nΔ,7),dtype=np.complex128),
-                'na':np.zeros((nΔ,7),dtype=np.float64),
-                'nb':np.zeros((nΔ,7),dtype=np.float64),
-                'T':np.zeros((nΔ,7),dtype=np.float64),
-                'eigvals':np.zeros((nΔ,7,7),dtype=np.complex128),
-                'det_j':np.zeros((nΔ,7),dtype=np.float64),
-                'L':np.zeros((nΔ,7),dtype=np.float64),
+        res = {'Pa':np.zeros((nΔ,nEq),dtype=np.float64),
+                'Pb':np.zeros((nΔ,nEq),dtype=np.float64),
+                'a':np.zeros((nΔ,nEq),dtype=np.complex128),
+                'b':np.zeros((nΔ,nEq),dtype=np.complex128),
+                'na':np.zeros((nΔ,nEq),dtype=np.float64),
+                'nb':np.zeros((nΔ,nEq),dtype=np.float64),
+                'T':np.zeros((nΔ,nEq),dtype=np.float64),
+                'eigvals':np.zeros((nΔ,nEq,nEq),dtype=np.complex128),
+                'det_j':np.zeros((nΔ,nEq),dtype=np.float64),
+                'L':np.zeros((nΔ,nEq),dtype=np.float64),
+                'a_o':np.zeros((nΔ,nEq),dtype=np.complex128),
+                'Po':np.zeros((nΔ,nEq),dtype=np.float64),
                 # 'mm_out':out,
             }
     return res
 
-def process_mm_data_line(line,ncol=14,precision=True):
+def process_mm_data_line(line,ncol=12,precision=True):
     line_proc = line.replace('{Pa -> ','').replace('Pb -> ','').replace('}','').replace('"','').replace('*^','e')
     for iter in range(ncol + 1 - len(line_proc.split(','))):
         line_proc = line_proc[:-1] + ',' + line_proc[-1]
@@ -137,7 +142,7 @@ def process_mm_data_line(line,ncol=14,precision=True):
     # final_line = ','.join([x.strip() if x else '0.0' for x in  line_proc.split(',')[:-1]])+'\n'
     return final_line
 
-def import_mm_data(data_fname,data_dir=data_dir,ncol=14):
+def import_mm_data(data_fname,data_dir=data_dir,ncol=12):
     data_str = ''
     data_fpath = path.normpath(path.join(data_dir,data_fname))
     with open(data_fpath,'r') as f:
@@ -233,7 +238,7 @@ def load_2d_sweep(sweep_name='test',data_dir=data_dir,verbose=True,fpath=None):
         data = pickle.load(f)
     return data
 
-def ss_vals(Pa,Pb,Δ=-20.,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=30.,η2=8.,η1=15.,τ_fc=0.1,τ_xfc=0.1,χ=10,α=10,**kwargs):
+def ss_vals_separate_n(Pa,Pb,Δ=-20.,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=30.,η2=8.,η1=15.,τ_fc=0.1,τ_xfc=0.1,χ=10,α=10,**kwargs):
     Δ = np.expand_dims(Δ,1) # have to do this so that broadcasting works right
     # na_ss = τ_fc * (χ * Pa**2 + α * Pa)
     # nb_ss = τ_fc * (χ * Pb**2 + α * Pb)
@@ -253,7 +258,21 @@ def ss_vals(Pa,Pb,Δ=-20.,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=30.,η2
     return a_ss, b_ss, na_ss, nb_ss, T_ss
     #return a_ss, b_ss, n_ss, T_ss,Ba,Bb,ϕ_a,ϕ_b
 
-def jacobian(a,b,na,nb,T,Δ=-20.,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=30.,η2=8.,η1=15.,τ_fc=0.1,τ_xfc=0.1,χ=5.,α=10,):
+def ss_vals(Pa,Pb,Δ=-20.,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=30.,η2=8.,η1=15.,τ_fc=0.1,τ_xfc=0.1,χ=10,α=10,η=0.3,**kwargs):
+    Δ = np.expand_dims(Δ,1) # have to do this so that broadcasting works right
+    n_ss = τ_fc * χ * (Pa**2+Pb**2)
+    T_ss = ζ * τ_th * ( η2 * r * ( Pa**2 + Pb**2 ) + n_ss / μ * ( Pa + Pb ) )
+    Ba = (-1./2. + 1j*Δ - 1j*γ/2) + (1j - r) * Pa + (-1j - 1/μ) * na_ss + 1j * T_ss
+    Bb = (-1./2. + 1j*Δ + 1j*γ/2) + (1j - r) * Pb + (-1j - 1/μ) * nb_ss + 1j * T_ss
+    ϕ_a = np.angle(-1./Ba) ;
+    ϕ_b = np.angle(-1./Bb) ;
+    a_ss = np.sqrt(Pa) * np.exp(1j*ϕ_a)
+    b_ss = np.sqrt(Pb) * np.exp(1j*ϕ_b)
+    a_out_ss = s - np.sqrt(η) * ( a_ss + b_ss )
+    Po = abs(a_out_ss)**2
+    return a_ss, b_ss, n_ss, T_ss, a_out_ss, Po
+
+def jacobian_separate_n(a,b,na,nb,T,Δ=-20.,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=30.,η2=8.,η1=15.,τ_fc=0.1,τ_xfc=0.1,χ=5.,α=10,):
     a_star = np.conj(a)
     b_star = np.conj(b)
     j = np.array([
@@ -308,13 +327,55 @@ def jacobian(a,b,na,nb,T,Δ=-20.,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=
             -(1./τ_th)]])
     return j
 
-def jac_eigvals_sweep(Pa,Pb,Δ,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=30.,η2=8.,η1=15.,τ_fc=0.1,τ_xfc=0.1,χ=5.,α=10,n_eqs=7,verbose=True,**kwargs):
+def jacobian(a,b,na,nb,T,Δ=-20.,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=30.,η2=8.,η1=15.,τ_fc=0.1,τ_xfc=0.1,χ=5.,α=10,η=0.3,):
+    a_star = np.conj(a)
+    b_star = np.conj(b)
+    j = np.array([
+        [-1./2. - 2. * a * a_star * r + 1j * (2. * a * a_star - n + T - γ/2 + Δ) - n/μ,
+            -a**2 * (-1j + r),
+            0.,
+            0.,
+            a * (-1j - 1/μ),
+            1j * a],
+        [-a_star**2 * (1j + r),
+            -2 * a * a_star * (1j + r) + 1./2. * 1j * (1j + 2. * n - 2. * T + γ - 2. * Δ) - n/μ,
+            0.,
+            0.,
+            a_star * (1j - 1./μ),
+            -1j * a_star],
+        [0.,
+            0.,
+            -1./2. - 2. * b * b_star * r + 1j * (2 * b * b_star - n + T + γ/2 + Δ) - n/μ,
+             -b**2 * (-1j + r),
+             b * (-1j - 1./μ),
+             1j * b],
+        [0.,
+            0.,
+            -b_star**2 * (1j + r),
+            -1./2. - 2. * b * b_star * (1j + r) - 1./2. * 1j * (-2 * n + 2. * T + γ + 2. * Δ) - n/μ,
+            b_star * (1j - 1./μ),
+            -1j * b_star],
+        [2. * a * a_star**2 * χ,
+            2. * a**2 * a_star * χ,
+            2. * b * b_star**2 * χ,
+            2. * b**2 * b_star * χ,
+            -(1/τ_fc),
+            0.],
+        [(a_star * ζ * (n + 2. * a * a_star * r * η * μ))/μ,
+            ( a * ζ * (n + 2. * a * a_star * r * η * μ))/μ,
+            ( b_star * ζ * (n + 2. * b * b_star * r * η * μ))/μ,
+            (b * ζ * ( n + 2. * b * b_star * r * η * μ))/μ,
+            (a * a_star + b * b_star) * ζ / μ,
+            -(1./τ_th)]])
+    return j
+
+def jac_eigvals_sweep(Pa,Pb,Δ,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=30.,η2=8.,η1=15.,τ_fc=0.1,τ_xfc=0.1,χ=5.,α=10,n_eqs=6,verbose=True,**kwargs):
     m = n_eqs,
     eigvals = np.zeros(Pa.shape+m,dtype=np.complex128)
     det_j = np.zeros(Pa.shape,dtype=np.float64)
     L = np.zeros(Pa.shape,dtype=np.float64)
-    a,b,na,nb,T = ss_vals(Pa,Pb,Δ=Δ,s=s,γ=γ,
-                μ=μ,r=r,ζ=ζ,τ_th=τ_th,η1=η1,η2=η2,τ_fc=τ_fc,τ_xfc=τ_xfc,χ=χ,α=α)
+    a,b,n,T,a_out,Po = ss_vals(Pa,Pb,Δ=Δ,s=s,γ=γ,
+                μ=μ,r=r,ζ=ζ,τ_th=τ_th,η1=η1,η2=η2,τ_fc=τ_fc,τ_xfc=τ_xfc,χ=χ,α=α,η=η)
     for ind in range(Pa.size):
         if Pa.ravel()[ind]:
             inds = np.unravel_index(ind,Pa.shape)
@@ -323,7 +384,7 @@ def jac_eigvals_sweep(Pa,Pb,Δ,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=30
                 # print(f'inds: {inds}')
                 # print(f'a[inds]: {a[inds]}')
             j = jacobian(a[inds],b[inds],na[inds],nb[inds],T[inds],Δ=Δ[inds[0]],s=s,
-                γ=γ,μ=μ,r=r,ζ=ζ,τ_th=τ_th,η1=η1,η2=η2,τ_fc=τ_fc,τ_xfc=τ_xfc,χ=χ,α=α)
+                γ=γ,μ=μ,r=r,ζ=ζ,τ_th=τ_th,η1=η1,η2=η2,τ_fc=τ_fc,τ_xfc=τ_xfc,χ=χ,α=α,,η=η)
             try:
                 eigvals[inds,:] = np.linalg.eigvals(j)
                 det_j[inds] = np.linalg.det(j)
@@ -332,7 +393,7 @@ def jac_eigvals_sweep(Pa,Pb,Δ,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=30
                 eigvals[inds,:] = np.zeros(n_eqs)
                 det_j[inds] = 0.
                 L[inds] = 0.
-    return a,b,na,nb,T,eigvals,det_j,L
+    return a,b,na,nb,T,eigvals,det_j,L,a_out,Po
 
 def analyze_eigvals(data,return_data=False):
     Pa = data['Pa']
@@ -380,47 +441,7 @@ def analyze_eigvals(data,return_data=False):
 
 
 
-def jacobian_old(a,b,n,T,Δ=-20.,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=30.,η=8.,τ_fc=0.1,χ=5.):
-    a_star = np.conj(a)
-    b_star = np.conj(b)
-    j = np.array([
-        [-1./2. - 2. * a * a_star * r + 1j * (2. * a * a_star - n + T - γ/2 + Δ) - n/μ,
-            -a**2 * (-1j + r),
-            0.,
-            0.,
-            a * (-1j - 1/μ),
-            1j * a],
-        [-a_star**2 * (1j + r),
-            -2 * a * a_star * (1j + r) + 1./2. * 1j * (1j + 2. * n - 2. * T + γ - 2. * Δ) - n/μ,
-            0.,
-            0.,
-            a_star * (1j - 1./μ),
-            -1j * a_star],
-        [0.,
-            0.,
-            -1./2. - 2. * b * b_star * r + 1j * (2 * b * b_star - n + T + γ/2 + Δ) - n/μ,
-             -b**2 * (-1j + r),
-             b * (-1j - 1./μ),
-             1j * b],
-        [0.,
-            0.,
-            -b_star**2 * (1j + r),
-            -1./2. - 2. * b * b_star * (1j + r) - 1./2. * 1j * (-2 * n + 2. * T + γ + 2. * Δ) - n/μ,
-            b_star * (1j - 1./μ),
-            -1j * b_star],
-        [4. * a * a_star**2 * χ,
-            4. * a**2 * a_star * χ,
-            4. * b * b_star**2 * χ,
-            4. * b**2 * b_star * χ,
-            -(2/τ_fc),
-            0.],
-        [(a_star * ζ * (n + 2. * a * a_star * r * η * μ))/μ,
-            ( a * ζ * (n + 2. * a * a_star * r * η * μ))/μ,
-            ( b_star * ζ * (n + 2. * b * b_star * r * η * μ))/μ,
-            (b * ζ * ( n + 2. * b * b_star * r * η * μ))/μ,
-            (a * a_star + b * b_star) * ζ / μ,
-            -(1./τ_th)]])
-    return j
+
 
 
 
@@ -726,7 +747,7 @@ def expt2norm_params(p_expt=p_expt_def,p_mat=p_si,verbose=True):
 ################################################################################
 
 
-def compute_PVΔ_sweep(p_expt=p_expt_def,p_mat=p_si,sweep_name='test',nEq=7,n_proc=n_proc_def,data_dir=data_dir,verbose=True,return_data=False):
+def compute_PVΔ_sweep(p_expt=p_expt_def,p_mat=p_si,sweep_name='test',nEq=6,n_proc=n_proc_def,data_dir=data_dir,verbose=True,return_data=False):
     """
     Find steady state solutions and corresponding Jacobian eigenvalues
     for the specified normalized 2-mode+free-carrier+thermal microring model
@@ -821,6 +842,8 @@ def compute_PVΔ_sweep(p_expt=p_expt_def,p_mat=p_si,sweep_name='test',nEq=7,n_pr
             eigvals = np.zeros((ns,nV,nΔ,nEq,nEq),dtype=np.complex128)
             det_j = np.zeros((ns,nV,nΔ,nEq),dtype=np.float64)
             L = np.zeros((ns,nV,nΔ,nEq),dtype=np.float64)
+            a_o = np.zeros((ns,nV,nΔ,nEq),dtype=np.complex128)
+            Po = Pa = np.zeros((ns,nV,nΔ,nEq),dtype=np.float64)
         for sind in range(ns):
             flat_index = int(np.ravel_multi_index((Vind,sind),(nV,ns)))
             Pa[sind,Vind,:] = res[flat_index]['Pa']
@@ -833,13 +856,15 @@ def compute_PVΔ_sweep(p_expt=p_expt_def,p_mat=p_si,sweep_name='test',nEq=7,n_pr
             eigvals[sind,Vind,:] = res[flat_index]['eigvals']
             det_j[sind,Vind,:] = res[flat_index]['det_j']
             L[sind,Vind,:] = res[flat_index]['L']
+            a_o[sind,Vind,:] = res[flat_index]['a_o']
+            Po[sind,Vind,:] = res[flat_index]['Po']
         # save data
         V_data = {'Pa':Pa[:,Vind],'Pb':Pb[:,Vind],'a':a[:,Vind],'b':b[:,Vind],'na':na[:,Vind],'nb':nb[:,Vind],'T':T[:,Vind],
-            'eigvals':eigvals[:,Vind],'det_j':det_j[:,Vind],'L':L[:,Vind],**V_params}
+            'eigvals':eigvals[:,Vind],'det_j':det_j[:,Vind],'L':L[:,Vind],'Po':Po[:,Vind],'a_o':a_o[:,Vind],**V_params}
         with open(V_data_fpath, 'wb') as f:
             pickle.dump(V_data,f)
         data = {'Pa':Pa,'Pb':Pb,'a':a,'b':b,'na':na,'nb':nb,'T':T,
-            'eigvals':eigvals,'det_j':det_j,'L':L,'V_params':V_params_list,**metadata}
+            'eigvals':eigvals,'det_j':det_j,'L':L,'V_params':V_params_list,'Po':Po,'a_o':a_o,**metadata}
         with open(sweep_data_fpath, 'wb') as f:
             pickle.dump(data,f)
     stop_timestamp_str = datetime.strftime(datetime.now(),'%Y_%m_%d_%H_%M_%S')
@@ -914,7 +939,7 @@ def load_PVΔ_sweep(sweep_name='test',data_dir=data_dir,verbose=True,fpath=None)
     d['stable'] = stable
     return metadata
 
-def reprocess_PVΔ_sweep(sweep_name='test',nEq=7,n_proc=n_proc_def,data_dir=data_dir,verbose=True,return_data=False,fpath=None):
+def reprocess_PVΔ_sweep(sweep_name='test',nEq=6,n_proc=n_proc_def,data_dir=data_dir,verbose=True,return_data=False,fpath=None):
     """
     Find steady state solutions and corresponding Jacobian eigenvalues
     for the specified normalized 2-mode+free-carrier+thermal microring model

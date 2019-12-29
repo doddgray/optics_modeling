@@ -22,13 +22,12 @@ tauxfc = Rationalize[ToExpression[var[[17]]],0.01]
 eta = Rationalize[ToExpression[var[[18]]],0.02]
 wp = ToExpression[var[[19]]]
 
-Subscript[ntot, ss]:=\[Chi] Subscript[\[Tau], fc](Pa^2+Pb^2) + \[Alpha] Subscript[\[Tau], fc](Pa+Pb);
-Subscript[ndiff, ss]:=(\[Chi](Pa^2-Pb^2) + \[Alpha](Pa-Pb))/( 1/Subscript[\[Tau], fc] +  2/Subscript[\[Tau], xfc]);
-Subscript[na, ss]:= Subscript[ntot, ss] + Subscript[ndiff, ss];
-Subscript[nb, ss]:= Subscript[ntot, ss] - Subscript[ndiff, ss];
-Subscript[T, ss]:= \[Zeta] Subscript[\[Tau], th](\[Rho] r(Pa^2+Pb^2)+ \[Psi] \[Alpha] r (Pa+Pb)/(2\[Chi]) + ( Subscript[na, ss]Pa + Subscript[nb, ss]Pb )/\[Mu]);
-Ba:=(-(1/2)+ \[CapitalDelta] I-\[Gamma]/2 I)+(I-r)Pa+(-I-1/\[Mu])Subscript[na, ss]+Subscript[T, ss] I // ComplexExpand;
-Bb:=(-(1/2)+ \[CapitalDelta] I+\[Gamma]/2 I)+(I-r)Pb+(-I-1/\[Mu])Subscript[nb, ss]+Subscript[T, ss] I // ComplexExpand;
+(*Subscript[n, ss]:=\[Chi] Subscript[\[Tau], fc](Pa^2+Pb^2) + \[Alpha] Subscript[\[Tau], fc](Pa+Pb);
+Subscript[T, ss]:= \[Zeta] Subscript[\[Tau], th](\[Rho] r(Pa^2+Pb^2)+ \[Psi] \[Alpha] r (Pa+Pb)/(2\[Chi]) + Subscript[n, ss](Pa+Pb)/\[Mu]);*)
+Subscript[n, ss]:=\[Chi] Subscript[\[Tau], fc](Pa^2+Pb^2) ;
+Subscript[T, ss]:= \[Zeta] Subscript[\[Tau], th](\[Rho] r(Pa^2+Pb^2) + Subscript[n, ss](Pa+Pb)/\[Mu]);
+Ba:=(-(1/2)+ \[CapitalDelta] I-\[Gamma]/2 I)+(I-r)Pa+(-I-1/\[Mu])Subscript[n, ss]+Subscript[T, ss] I // ComplexExpand;
+Bb:=(-(1/2)+ \[CapitalDelta] I+\[Gamma]/2 I)+(I-r)Pb+(-I-1/\[Mu])Subscript[n, ss]+Subscript[T, ss] I // ComplexExpand;
 RHSa = Assuming[Pa>=0&& Pb>=0 &&s>=0 &&\[Gamma]>0 &&\[Mu]>0 &&r>0 &&Subscript[\[Tau], th]>0 &&\[Zeta]>0 &&\[Eta]>0 &&\[Chi]>0 &&Subscript[\[Tau], fc]>0 && \[CapitalDelta] \[Element]Reals,Simplify[(Re[Ba]^2+Im[Ba]^2)Pa - \[Eta] s^2]]; 
 RHSb = Assuming[Pa>=0&& Pb>=0 &&s>=0 &&\[Gamma]>0 &&\[Mu]>0 &&r>0 &&Subscript[\[Tau], th]>0 &&\[Zeta]>0 &&\[Eta]>0 &&\[Chi]>0 &&Subscript[\[Tau], fc]>0 && \[CapitalDelta] \[Element]Reals,Simplify[(Re[Bb]^2+Im[Bb]^2)Pb - \[Eta] s^2]]; 
 
