@@ -393,7 +393,7 @@ def jac_eigvals_sweep(Pa,Pb,Δ,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=30
                 eigvals[inds,:] = np.zeros(n_eqs)
                 det_j[inds] = 0.
                 L[inds] = 0.
-    return a,b,na,nb,T,eigvals,det_j,L,a_out,Po
+    return a,b,n,T,eigvals,det_j,L,a_out,Po
 
 def analyze_eigvals(data,return_data=False):
     Pa = data['Pa']
