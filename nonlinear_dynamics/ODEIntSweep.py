@@ -86,7 +86,7 @@ def jac_DrivenCavity(t,y,p):
     d_d_T = [ ζ*(2*η*r*a_c_star**2*a_c + n/μ*a_c_star) , ζ*(2*η*r*a_c_star*a_c**2 + n/μ*a_c) , ζ*(2*η*r*a_s_star**2*a_s + n/μ*a_s_star) , ζ*(2*η*r*a_s_star*a_s**2 + n/μ*a_s), ζ/μ * ( (a_c*a_c_star) + (a_s*a_s_star) ), -1./τ_th ]
     return [d_d_a_c, d_d_a_c_star, d_d_a_s, d_d_a_s_star, d_d_n, d_d_T]
 
-def f_tuning(t,y,p,dΔdt):
+def f_tuning_old(t,y,p,dΔdt):
     # unpack paramater dict "p"
     s = p['s']
     δ_r = p['γ']
@@ -114,7 +114,7 @@ def f_tuning(t,y,p,dΔdt):
     d_T = -T / τ_th + ζ * ( η2 * r * ( (a_c*a_c_star)**2 + (a_s*a_s_star)**2 ) + η1 * r * α / χ * ( (a_c*a_c_star) + (a_s*a_s_star) ) + 1 / μ * ( (a_c*a_c_star) * n_c + (a_s*a_s_star) * n_s ) )
     return [d_Δ, d_a_c, d_a_c_star, d_a_s, d_a_s_star , d_n_c, d_n_s, d_T]
 
-def f_tuning_old(t,y,p,dΔdt):
+def f_tuning(t,y,p,dΔdt):
     # unpack paramater dict "p"
     s = p['s']
     δ_r = p['γ']
