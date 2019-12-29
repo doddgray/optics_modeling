@@ -369,7 +369,7 @@ def jacobian(a,b,na,nb,T,Δ=-20.,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=
             -(1./τ_th)]])
     return j
 
-def jac_eigvals_sweep(Pa,Pb,Δ,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=30.,η2=8.,η1=15.,τ_fc=0.1,τ_xfc=0.1,χ=5.,α=10,n_eqs=6,verbose=True,**kwargs):
+def jac_eigvals_sweep(Pa,Pb,Δ,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=30.,η2=8.,η1=15.,τ_fc=0.1,τ_xfc=0.1,χ=5.,α=10,η=0.3,n_eqs=6,verbose=True,**kwargs):
     m = n_eqs,
     eigvals = np.zeros(Pa.shape+m,dtype=np.complex128)
     det_j = np.zeros(Pa.shape,dtype=np.float64)
