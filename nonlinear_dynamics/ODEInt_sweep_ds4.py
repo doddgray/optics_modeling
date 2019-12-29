@@ -53,9 +53,10 @@ p_expt = {
     'n_sf': 2, # number of significant figures to leave in the normalized parameters passed to mathematica. the fewer, the faster
     'δs': 0.4, # s step size (sqrt normalized input power)
     'δΔ': 0.2,  # Δ step size (cold cavity detuning)
-    'τ_th_norm_ζ_product': 5,  # τ_th_norm * ζ, inferred from experiment data
+    'τ_th_norm_ζ_product': 15.5,  # τ_th_norm * ζ, inferred from experiment data
     'χ3_sw_factor':1.5, # to reflect the effective χ(3) enhancement for standing waves vs. traveling waves = \int_0^\pi (E_{sw} * cos(z))^4 dz, with E_sw = sqrt(2)*E_tr
     'dΔdt': 3e-3,
+    'working_precision':20,
 }
 
 tind_start=0 # in case you need to restart in the middle after a crash

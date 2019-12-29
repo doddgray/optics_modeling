@@ -228,12 +228,11 @@ def ODEInt_Dsweep_trace(p):
     t_max = (Δ0_b2r - Δ0_r2b) / p['dΔdt']
     a_0 = b_0 = 0.0 + 0.0j
     a_star_0 = b_star_0 = np.conjugate(a_0)
-    na0 = 0.0
-    nb0 = 0.0
+    n0 = 0.0
     T0 = 0.0
     # Δ, a_c, a_c_star, a_s, a_s_star, n, T = y
-    y0_b2r = [Δ0_b2r,a_0,a_star_0,b_0,b_star_0,na0,nb0,T0]
-    y0_r2b = [Δ0_r2b,a_0,a_star_0,b_0,b_star_0,na0,nb0,T0]
+    y0_b2r = [Δ0_b2r,a_0,a_star_0,b_0,b_star_0,n0,T0]
+    y0_r2b = [Δ0_r2b,a_0,a_star_0,b_0,b_star_0,n0,T0]
     t_span = (0.0, t_max)
     sol_b2r = solve_ivp(fun=lambda t, y: f_tuning(t, y, p, -p['dΔdt']),
                             t_span=t_span,
