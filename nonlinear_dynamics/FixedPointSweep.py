@@ -119,8 +119,7 @@ def process_mm_data_parallel(params=params,nEq=6):
                 'Pb':np.zeros((nΔ,nEq),dtype=np.float64),
                 'a':np.zeros((nΔ,nEq),dtype=np.complex128),
                 'b':np.zeros((nΔ,nEq),dtype=np.complex128),
-                'na':np.zeros((nΔ,nEq),dtype=np.float64),
-                'nb':np.zeros((nΔ,nEq),dtype=np.float64),
+                'n':np.zeros((nΔ,nEq),dtype=np.float64),
                 'T':np.zeros((nΔ,nEq),dtype=np.float64),
                 'eigvals':np.zeros((nΔ,nEq,nEq),dtype=np.complex128),
                 'det_j':np.zeros((nΔ,nEq),dtype=np.float64),
@@ -835,8 +834,7 @@ def compute_PVΔ_sweep(p_expt=p_expt_def,p_mat=p_si,sweep_name='test',nEq=6,n_pr
             Pb = np.zeros((ns,nV,nΔ,nEq),dtype=np.float64)
             a = np.zeros((ns,nV,nΔ,nEq),dtype=np.complex128)
             b = np.zeros((ns,nV,nΔ,nEq),dtype=np.complex128)
-            na = np.zeros((ns,nV,nΔ,nEq),dtype=np.float64)
-            nb = np.zeros((ns,nV,nΔ,nEq),dtype=np.float64)
+            n = np.zeros((ns,nV,nΔ,nEq),dtype=np.float64)
             T = np.zeros((ns,nV,nΔ,nEq),dtype=np.float64)
             eigvals = np.zeros((ns,nV,nΔ,nEq,nEq),dtype=np.complex128)
             det_j = np.zeros((ns,nV,nΔ,nEq),dtype=np.float64)
@@ -849,8 +847,7 @@ def compute_PVΔ_sweep(p_expt=p_expt_def,p_mat=p_si,sweep_name='test',nEq=6,n_pr
             Pb[sind,Vind,:] = res[flat_index]['Pb']
             a[sind,Vind,:] = res[flat_index]['a']
             b[sind,Vind,:] = res[flat_index]['b']
-            na[sind,Vind,:] = res[flat_index]['na']
-            nb[sind,Vind,:] = res[flat_index]['nb']
+            n[sind,Vind,:] = res[flat_index]['n']
             T[sind,Vind,:] = res[flat_index]['T']
             eigvals[sind,Vind,:] = res[flat_index]['eigvals']
             det_j[sind,Vind,:] = res[flat_index]['det_j']
@@ -858,11 +855,11 @@ def compute_PVΔ_sweep(p_expt=p_expt_def,p_mat=p_si,sweep_name='test',nEq=6,n_pr
             a_o[sind,Vind,:] = res[flat_index]['a_o']
             Po[sind,Vind,:] = res[flat_index]['Po']
         # save data
-        V_data = {'Pa':Pa[:,Vind],'Pb':Pb[:,Vind],'a':a[:,Vind],'b':b[:,Vind],'na':na[:,Vind],'nb':nb[:,Vind],'T':T[:,Vind],
+        V_data = {'Pa':Pa[:,Vind],'Pb':Pb[:,Vind],'a':a[:,Vind],'b':b[:,Vind],'n':n[:,Vind],'T':T[:,Vind],
             'eigvals':eigvals[:,Vind],'det_j':det_j[:,Vind],'L':L[:,Vind],'Po':Po[:,Vind],'a_o':a_o[:,Vind],**V_params}
         with open(V_data_fpath, 'wb') as f:
             pickle.dump(V_data,f)
-        data = {'Pa':Pa,'Pb':Pb,'a':a,'b':b,'na':na,'nb':nb,'T':T,
+        data = {'Pa':Pa,'Pb':Pb,'a':a,'b':b,'n':n,'T':T,
             'eigvals':eigvals,'det_j':det_j,'L':L,'V_params':V_params_list,'Po':Po,'a_o':a_o,**metadata}
         with open(sweep_data_fpath, 'wb') as f:
             pickle.dump(data,f)
@@ -1035,18 +1032,17 @@ def reprocess_PVΔ_sweep(sweep_name='test',nEq=6,n_proc=n_proc_def,data_dir=data
             Pb[sind,Vind,:] = res[flat_index]['Pb']
             a[sind,Vind,:] = res[flat_index]['a']
             b[sind,Vind,:] = res[flat_index]['b']
-            na[sind,Vind,:] = res[flat_index]['na']
-            nb[sind,Vind,:] = res[flat_index]['nb']
+            n[sind,Vind,:] = res[flat_index]['n']
             T[sind,Vind,:] = res[flat_index]['T']
             eigvals[sind,Vind,:] = res[flat_index]['eigvals']
             det_j[sind,Vind,:] = res[flat_index]['det_j']
             L[sind,Vind,:] = res[flat_index]['L']
         # save data
-        V_data = {'Pa':Pa[:,Vind],'Pb':Pb[:,Vind],'a':a[:,Vind],'b':b[:,Vind],'na':na[:,Vind],'nb':nb[:,Vind],'T':T[:,Vind],
+        V_data = {'Pa':Pa[:,Vind],'Pb':Pb[:,Vind],'a':a[:,Vind],'b':b[:,Vind],'n':n[:,Vind],'T':T[:,Vind],
             'eigvals':eigvals[:,Vind],'det_j':det_j[:,Vind],'L':L[:,Vind],**V_params}
         with open(V_data_fpath, 'wb') as f:
             pickle.dump(V_data,f)
-        data = {'Pa':Pa,'Pb':Pb,'a':a,'b':b,'na':na,'nb':nb,'T':T,
+        data = {'Pa':Pa,'Pb':Pb,'a':a,'b':b,'n':n,'T':T,
             'eigvals':eigvals,'det_j':det_j,'L':L,'V_params':V_params_list,**metadata}
         with open(sweep_data_fpath, 'wb') as f:
             pickle.dump(data,f)
