@@ -35,9 +35,9 @@ p_expt = {
     'FWHM': 350 * u.MHz, # measured Lorentzian linewidth of single resonance
     'FWHM_i': 190 * u.MHz, # measured "intrinsic" Lorentzian linewidth of single resonance
     'splitting': 1.15*u.GHz, # measured double-lorentzian splitting
-    'Δ_min': -80*u.GHz, # f_cavity,0 - f_laser tuning minimum
+    'Δ_min': -40*u.GHz, # f_cavity,0 - f_laser tuning minimum
     'Δ_max': 5*u.GHz, # f_cavity,0 - f_laser tuning maximum
-    'P_bus_max': 2.0 * u.mW, # max input power in bus waveguide
+    'P_bus_max': 0.5 * u.mW, # max input power in bus waveguide
     'V_rb': V_rb,
     'τ_th': 30 * u.ns, # thermal "time constant" to fit
     'df_dT': -9.7 * u.GHz / u.degK, # measured thermal tuning rate
@@ -50,7 +50,7 @@ p_expt = {
     'n_eff': 2.6, # mode effective index from mode solver
     'β_2': 2 * u.ps**2/u.m, # GVD roughly measured, expected to be ~ 1 ps^2 / m
     'n_sf': 3, # number of significant figures to leave in the normalized parameters passed to mathematica. the fewer, the faster
-    'δs': 0.1, # s step size (sqrt normalized input power)
+    'δs': 0.2, # s step size (sqrt normalized input power)
     'δΔ': 0.2,  # Δ step size (cold cavity detuning)
     'τ_th_norm_ζ_product': 15.5,  # τ_th_norm * ζ, inferred from experiment data
     'χ3_sw_factor':1.5, # to reflect the effective χ(3) enhancement for standing waves vs. traveling waves = \int_0^\pi (E_{sw} * cos(z))^4 dz, with E_sw = sqrt(2)*E_tr
@@ -66,7 +66,7 @@ if __name__ == '__main__':
             p['τ_th'] = tt
             fps.compute_PVΔ_sweep(p_expt=p,
                                 p_mat=p_si,
-                                sweep_name=f'ds14_tau{tind}',
+                                sweep_name=f'test0_tau{tind}',
                                 data_dir=data_dir,
                                 verbose=True,
                                 return_data=False,
