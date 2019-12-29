@@ -262,8 +262,8 @@ def ss_vals(Pa,Pb,Δ=-20.,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=30.,η2
     Δ = np.expand_dims(Δ,1) # have to do this so that broadcasting works right
     n_ss = τ_fc * χ * (Pa**2+Pb**2)
     T_ss = ζ * τ_th * ( η2 * r * ( Pa**2 + Pb**2 ) + n_ss / μ * ( Pa + Pb ) )
-    Ba = (-1./2. + 1j*Δ - 1j*γ/2) + (1j - r) * Pa + (-1j - 1/μ) * na_ss + 1j * T_ss
-    Bb = (-1./2. + 1j*Δ + 1j*γ/2) + (1j - r) * Pb + (-1j - 1/μ) * nb_ss + 1j * T_ss
+    Ba = (-1./2. + 1j*Δ - 1j*γ/2) + (1j - r) * Pa + (-1j - 1/μ) * n_ss + 1j * T_ss
+    Bb = (-1./2. + 1j*Δ + 1j*γ/2) + (1j - r) * Pb + (-1j - 1/μ) * n_ss + 1j * T_ss
     ϕ_a = np.angle(-1./Ba) ;
     ϕ_b = np.angle(-1./Bb) ;
     a_ss = np.sqrt(Pa) * np.exp(1j*ϕ_a)
@@ -327,7 +327,7 @@ def jacobian_separate_n(a,b,na,nb,T,Δ=-20.,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ
             -(1./τ_th)]])
     return j
 
-def jacobian(a,b,na,nb,T,Δ=-20.,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=30.,η2=8.,η1=15.,τ_fc=0.1,τ_xfc=0.1,χ=5.,α=10,η=0.3,):
+def jacobian(a,b,n,T,Δ=-20.,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=30.,η2=8.,η1=15.,τ_fc=0.1,τ_xfc=0.1,χ=5.,α=10,η=0.3,):
     a_star = np.conj(a)
     b_star = np.conj(b)
     j = np.array([
@@ -383,7 +383,7 @@ def jac_eigvals_sweep(Pa,Pb,Δ,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=30
                 # print(f'ind: {ind}')
                 # print(f'inds: {inds}')
                 # print(f'a[inds]: {a[inds]}')
-            j = jacobian(a[inds],b[inds],na[inds],nb[inds],T[inds],Δ=Δ[inds[0]],s=s,
+            j = jacobian(a[inds],b[inds],n[inds],T[inds],Δ=Δ[inds[0]],s=s,
                 γ=γ,μ=μ,r=r,ζ=ζ,τ_th=τ_th,η1=η1,η2=η2,τ_fc=τ_fc,τ_xfc=τ_xfc,χ=χ,α=α,η=η)
             try:
                 eigvals[inds,:] = np.linalg.eigvals(j)
