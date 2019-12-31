@@ -374,13 +374,17 @@ def jac_eigvals_sweep(Pa,Pb,Δ,s=np.sqrt(20.),γ=2.,μ=30.,r=0.2,ζ=0.1,τ_th=30
     L = np.zeros(Pa.shape,dtype=np.float64)
     a,b,n,T,a_out,Po = ss_vals(Pa,Pb,Δ=Δ,s=s,γ=γ,
                 μ=μ,r=r,ζ=ζ,τ_th=τ_th,η1=η1,η2=η2,τ_fc=τ_fc,τ_xfc=τ_xfc,χ=χ,α=α,η=η)
+    print('Pa.size: '+str(Pa.size))
+    print('Pa.shape: '+str(Pa.shape))
+    print('a.shape: '+str(a.shape))
+
     for ind in range(Pa.size):
         if Pa.ravel()[ind]:
             inds = np.unravel_index(ind,Pa.shape)
-            # if verbose:
-                # print(f'ind: {ind}')
-                # print(f'inds: {inds}')
-                # print(f'a[inds]: {a[inds]}')
+            if verbose:
+                print(f'ind: {ind}')
+                print(f'inds: {inds}')
+                print(f'a[inds]: {a[inds]}')
             j = jacobian(a[inds],b[inds],n[inds],T[inds],Δ=Δ[inds[0]],s=s,
                 γ=γ,μ=μ,r=r,ζ=ζ,τ_th=τ_th,η1=η1,η2=η2,τ_fc=τ_fc,τ_xfc=τ_xfc,χ=χ,α=α,η=η)
             try:
@@ -840,7 +844,7 @@ def compute_PVΔ_sweep(p_expt=p_expt_def,p_mat=p_si,sweep_name='test',nEq=6,n_pr
             det_j = np.zeros((ns,nV,nΔ,nEq),dtype=np.float64)
             L = np.zeros((ns,nV,nΔ,nEq),dtype=np.float64)
             a_o = np.zeros((ns,nV,nΔ,nEq),dtype=np.complex128)
-            Po = Pa = np.zeros((ns,nV,nΔ,nEq),dtype=np.float64)
+            Po = np.zeros((ns,nV,nΔ,nEq),dtype=np.float64)
         for sind in range(ns):
             flat_index = int(np.ravel_multi_index((Vind,sind),(nV,ns)))
             Pa[sind,Vind,:] = res[flat_index]['Pa']
