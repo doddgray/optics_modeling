@@ -809,28 +809,12 @@ def compute_PVΔ_sweep(p_expt=p_expt_def,p_mat=p_si,sweep_name='test',nEq=6,n_pr
             V_params_ss_list[sind]['name'] = f's{sind}'
             V_params_ss_list[sind]['data_dir'] = V_dir
             params_list.append(V_params_ss_list[sind])
-            # run_mm_script(params=V_params_ss,data_dir=V_dir,data_fname=ss_fname)
-            # Pa_ss,Pb_ss = import_mm_data(path.join(V_dir,ss_fname))
-            # a_ss,b_ss,n_ss,T_ss,eigvals_ss,det_j_ss,L_ss = jac_eigvals_sweep(Pa_ss,Pb_ss,**V_params_ss)
-        # map function onto pool of mathematica processes
-        # with Pool(processes=n_proc) as pool:
-        #     out = pool.map(run_mm_script_parallel,V_params_ss_list)
-        #     res = pool.map(process_mm_data_parallel,V_params_ss_list)
-    with Pool(processes=n_proc) as pool:
+
+    with Pool(processes=1) as pool:
         out = pool.map(run_mm_script_parallel,params_list)
+    with Pool(processes=n_proc) as pool:
+        # out = pool.map(run_mm_script_parallel,params_list)
         res = pool.map(process_mm_data_parallel,params_list)
-        # with ProcessPool(max_workers=n_proc, max_tasks=n_proc) as pool:
-        #     out = pool.map(run_mm_script_parallel,V_params_ss_list)
-        #     res = pool.map(process_mm_data_parallel,V_params_ss_list)
-        #     future = pool.map(sometimes_stalling_processing, dataset, timeout=10)
-        #     iterator = future.result()
-        #     while True:
-        #         try:
-        #             result = next(iterator)
-        #         except StopIteration:
-        #             break
-        #         except TimeoutError as error:
-        #             print("function took longer than %d seconds" % error.args[1])
     for Vind, VV in enumerate(p_expt['V_rb']):
         # fill in dataset arrays, creating them first if Vind==0
         if Vind==0:
