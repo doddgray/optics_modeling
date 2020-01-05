@@ -29,7 +29,7 @@ if hostname=='dodd-laptop':
     script_dir = "/home/dodd/google-drive/Documents/mathematica-scripts/"
     mm_script_fpath = path.normpath(path.join(script_dir,mm_script_fname))
     os.environ['WolframKernel'] = '/usr/local/Wolfram/Mathematica/12.0/Executables/WolframKernel'
-    n_proc_def = 8
+    n_proc_def = 14
 else: # assume I'm on a MTL server or something
     home = str( Path.home() )
     data_dir = home+'/data/'
@@ -86,7 +86,7 @@ def run_mm_script_parallel(params=params):
     data_fname = params['name'] + '.csv'
     arg_list = [data_dir,data_fname,Δ_min,Δ_max,nΔ,params['s'],
         params['γ'],params['μ'],params['r'],params['ζ'],
-        params['τ_th'],params['η2'],params['τ_fc'],params['χ'],params['α'],params['η1'],params['τ_xfc'],params['η'],params['wp']]
+        params['τ_th'],params['η2'],params['τ_fc'],params['χ'],params['α'],params['η1'],params['τ_xfc'],params['η'],n_proc_def]
     cmd = [mm_script_fpath]+[f'{arg}' for arg in arg_list]
     out = subp.run(cmd,check=True)
     return out.returncode
@@ -810,7 +810,7 @@ def compute_PVΔ_sweep(p_expt=p_expt_def,p_mat=p_si,sweep_name='test',nEq=6,n_pr
             V_params_ss_list[sind]['data_dir'] = V_dir
             params_list.append(V_params_ss_list[sind])
 
-    with Pool(processes=1) as pool:
+    with Pool(processes=2) as pool:
         out = pool.map(run_mm_script_parallel,params_list)
     with Pool(processes=n_proc) as pool:
         # out = pool.map(run_mm_script_parallel,params_list)
