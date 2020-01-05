@@ -38,7 +38,7 @@ p_expt = {
     'splitting': 1.15*u.GHz, # measured double-lorentzian splitting
     'Δ_min': -80*u.GHz, # f_cavity,0 - f_laser tuning minimum
     'Δ_max': 5*u.GHz, # f_cavity,0 - f_laser tuning maximum
-    'P_bus_max': 2.0 * u.mW, # max input power in bus waveguide
+    'P_bus_max': 1.5 * u.mW, # max input power in bus waveguide
     'V_rb': V_rb,
     'τ_th': 30 * u.ns, # thermal "time constant" to fit
     'df_dT': -9.7 * u.GHz / u.degK, # measured thermal tuning rate

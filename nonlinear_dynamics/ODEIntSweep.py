@@ -34,8 +34,8 @@ from scipy.integrate import solve_ivp
 
 hostname = socket.gethostname()
 if hostname=='dodd-laptop':
-    data_dir = "/home/dodd/google-drive/notebooks/IMEC V1 1550nm ring measurements/Thermal SOI ring cavity stability analysis"
-    n_proc_def = 7
+    data_dir = "/home/dodd/data/ODEInt_PVDsweep"
+    n_proc_def = 6
 else: # assume I'm on a MTL server or something
     home = str( Path.home() )
     data_dir = home+'/data/'
@@ -53,16 +53,18 @@ def f_DrivenCavity(t,y,p):
     r = p['r']
     ζ = p['ζ']
     η = p['η']
+    η2 = p['η2']
     χ = p['χ']
     τ_fc = p['τ_fc']
     τ_th = p['τ_th']
+    sqrt_eta = sqrt(η)
     a_c, a_c_star, a_s, a_s_star, n, T = y
-    d_a_c = ( ( -0.5 + 1j*Δ + 1j*δ_r/2.0) + ( -1/μ - 1j ) * n + (1j - r) * (a_c * a_c_star) + 1j*T ) * a_c + s
-    d_a_c_star = np.conjugate( ( -0.5 + 1j*Δ + 1j*δ_r/2.0) + ( -1/μ - 1j ) * n + (1j - r) * (a_c * a_c_star) + 1j*T ) * a_c_star + s
-    d_a_s = ( ( -0.5 + 1j*Δ - 1j*δ_r/2.0) + ( -1/μ - 1j ) * n + (1j - r) * (a_s * a_s_star) + 1j*T ) * a_s + s
-    d_a_s_star = np.conjugate( ( -0.5 + 1j*Δ - 1j*δ_r/2.0) + ( -1/μ - 1j ) * n + (1j - r) * (a_s * a_s_star) + 1j*T ) * a_s_star + s
+    d_a_c = ( ( -0.5 + 1j*Δ + 1j*δ_r/2.0) + ( -1/μ - 1j ) * n + (1j - r) * (a_c * a_c_star) + 1j*T ) * a_c + sqrt_eta*s
+    d_a_c_star = np.conjugate( ( -0.5 + 1j*Δ + 1j*δ_r/2.0) + ( -1/μ - 1j ) * n + (1j - r) * (a_c * a_c_star) + 1j*T ) * a_c_star + sqrt_eta*s
+    d_a_s = ( ( -0.5 + 1j*Δ - 1j*δ_r/2.0) + ( -1/μ - 1j ) * n + (1j - r) * (a_s * a_s_star) + 1j*T ) * a_s + sqrt_eta*s
+    d_a_s_star = np.conjugate( ( -0.5 + 1j*Δ - 1j*δ_r/2.0) + ( -1/μ - 1j ) * n + (1j - r) * (a_s * a_s_star) + 1j*T ) * a_s_star + sqrt_eta*s
     d_n = -n / τ_fc + χ * ( (a_c*a_c_star)**2 + (a_s*a_s_star)**2 )
-    d_T = -T / τ_th + ζ * ( η * r * ( (a_c*a_c_star)**2 + (a_s*a_s_star)**2 ) + n / μ * ( (a_c*a_c_star) + (a_s*a_s_star) ) )
+    d_T = -T / τ_th + ζ * ( η2 * r * ( (a_c*a_c_star)**2 + (a_s*a_s_star)**2 ) + n / μ * ( (a_c*a_c_star) + (a_s*a_s_star) ) )
     return [d_a_c, d_a_c_star, d_a_s, d_a_s_star , d_n, d_T]
 
 def jac_DrivenCavity(t,y,p):
@@ -122,18 +124,20 @@ def f_tuning(t,y,p,dΔdt):
     r = p['r']
     ζ = p['ζ']
     η = p['η']
+    η2 = p['η2']
     χ = p['χ']
     τ_fc = p['τ_fc']
     τ_th = p['τ_th']
+    sqrt_eta = np.sqrt(η)
     # dΔdt = p['dΔdt']
     # define state vector
     Δ, a_c, a_c_star, a_s, a_s_star, n, T = y
     # define equation system
     d_Δ = dΔdt
-    d_a_c = ( ( -0.5 + 1j*Δ + 1j*δ_r/2.0) + ( -1/μ - 1j ) * n + (1j - r) * (a_c * a_c_star) + 1j*T ) * a_c + s
-    d_a_c_star = np.conjugate( ( -0.5 + 1j*Δ + 1j*δ_r/2.0) + ( -1/μ - 1j ) * n + (1j - r) * (a_c * a_c_star) + 1j*T ) * a_c_star + s
-    d_a_s = ( ( -0.5 + 1j*Δ - 1j*δ_r/2.0) + ( -1/μ - 1j ) * n + (1j - r) * (a_s * a_s_star) + 1j*T ) * a_s + s
-    d_a_s_star = np.conjugate( ( -0.5 + 1j*Δ - 1j*δ_r/2.0) + ( -1/μ - 1j ) * n + (1j - r) * (a_s * a_s_star) + 1j*T ) * a_s_star + s
+    d_a_c = ( ( -0.5 + 1j*Δ + 1j*δ_r/2.0) + ( -1/μ - 1j ) * n + (1j - r) * (a_c * a_c_star) + 1j*T ) * a_c + sqrt_eta*s
+    d_a_c_star = np.conjugate( ( -0.5 + 1j*Δ + 1j*δ_r/2.0) + ( -1/μ - 1j ) * n + (1j - r) * (a_c * a_c_star) + 1j*T ) * a_c_star + sqrt_eta*s
+    d_a_s = ( ( -0.5 + 1j*Δ - 1j*δ_r/2.0) + ( -1/μ - 1j ) * n + (1j - r) * (a_s * a_s_star) + 1j*T ) * a_s + sqrt_eta*s
+    d_a_s_star = np.conjugate( ( -0.5 + 1j*Δ - 1j*δ_r/2.0) + ( -1/μ - 1j ) * n + (1j - r) * (a_s * a_s_star) + 1j*T ) * a_s_star + sqrt_eta*s
     d_n = -n / τ_fc + χ * ( (a_c*a_c_star)**2 + (a_s*a_s_star)**2 )
     d_T = -T / τ_th + ζ * ( η * r * ( (a_c*a_c_star)**2 + (a_s*a_s_star)**2 ) + n / μ * ( (a_c*a_c_star) + (a_s*a_s_star) ) )
     return [d_Δ, d_a_c, d_a_c_star, d_a_s, d_a_s_star , d_n, d_T]
