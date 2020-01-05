@@ -36,8 +36,8 @@ p_expt = {
     'FWHM': 350 * u.MHz, # measured Lorentzian linewidth of single resonance
     'FWHM_i': 190 * u.MHz, # measured "intrinsic" Lorentzian linewidth of single resonance
     'splitting': 1.15*u.GHz, # measured double-lorentzian splitting
-    'Δ_min': -30*u.GHz, # f_cavity,0 - f_laser tuning minimum
-    'Δ_max': 10*u.GHz, # f_cavity,0 - f_laser tuning maximum
+    'Δ_min': -80*u.GHz, # f_cavity,0 - f_laser tuning minimum
+    'Δ_max': 5*u.GHz, # f_cavity,0 - f_laser tuning maximum
     'P_bus_max': 1.5 * u.mW, # max input power in bus waveguide
     'V_rb': V_rb,
     'τ_th': 30 * u.ns, # thermal "time constant" to fit
@@ -55,7 +55,7 @@ p_expt = {
     'δΔ': 0.2,  # Δ step size (cold cavity detuning)
     'τ_th_norm_ζ_product': 15.5,  # τ_th_norm * ζ, inferred from experiment data
     'χ3_sw_factor':1.5, # to reflect the effective χ(3) enhancement for standing waves vs. traveling waves = \int_0^\pi (E_{sw} * cos(z))^4 dz, with E_sw = sqrt(2)*E_tr
-    'dΔdt': 3e-3,
+    'dΔdt': 1e-3,
     'working_precision':20,
 }
 
@@ -69,7 +69,7 @@ if __name__ == '__main__':
 
             ois.collect_ODEInt_PVΔ_sweep(p_expt=p,
                                 p_mat=p_si,
-                                sweep_name=f'ds4_tau{tind}',
+                                sweep_name=f'ds5_tau{tind}',
                                 data_dir=data_dir,
                                 verbose=True,
                                 return_data=False,

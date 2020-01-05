@@ -88,9 +88,7 @@ def run_mm_script_parallel(params=params):
         params['γ'],params['μ'],params['r'],params['ζ'],
         params['τ_th'],params['η2'],params['τ_fc'],params['χ'],params['α'],params['η1'],params['τ_xfc'],params['η'],n_proc_def]
     cmd = [mm_script_fpath]+[f'{arg}' for arg in arg_list]
-    print(cmd)
     out = subp.run(cmd,check=True)
-    print(out)
     return out.returncode
 
 def process_mm_data_parallel(params=params,nEq=6):

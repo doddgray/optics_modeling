@@ -139,7 +139,7 @@ def f_tuning(t,y,p,dΔdt):
     d_a_s = ( ( -0.5 + 1j*Δ - 1j*δ_r/2.0) + ( -1/μ - 1j ) * n + (1j - r) * (a_s * a_s_star) + 1j*T ) * a_s + sqrt_eta*s
     d_a_s_star = np.conjugate( ( -0.5 + 1j*Δ - 1j*δ_r/2.0) + ( -1/μ - 1j ) * n + (1j - r) * (a_s * a_s_star) + 1j*T ) * a_s_star + sqrt_eta*s
     d_n = -n / τ_fc + χ * ( (a_c*a_c_star)**2 + (a_s*a_s_star)**2 )
-    d_T = -T / τ_th + ζ * ( η * r * ( (a_c*a_c_star)**2 + (a_s*a_s_star)**2 ) + n / μ * ( (a_c*a_c_star) + (a_s*a_s_star) ) )
+    d_T = -T / τ_th + ζ * ( η2 * r * ( (a_c*a_c_star)**2 + (a_s*a_s_star)**2 ) + n / μ * ( (a_c*a_c_star) + (a_s*a_s_star) ) )
     return [d_Δ, d_a_c, d_a_c_star, d_a_s, d_a_s_star , d_n, d_T]
 
 def jac_tuning(t,y,p,dΔdt):
@@ -243,7 +243,7 @@ def ODEInt_Dsweep_trace(p):
                             y0=y0_b2r,
                             method='RK45',
                             # min_step=0.1,
-                            max_step=3,
+                            max_step=100,
                             # jac=lambda t, y: jac_tuning(t, y, p, -p['dΔdt']),
                            )
     with open(fpath_b2r, 'wb') as f:
@@ -253,7 +253,7 @@ def ODEInt_Dsweep_trace(p):
                             y0=y0_r2b,
                             method='RK45',
                             # min_step=0.1,
-                            max_step=3,
+                            max_step=100,
                             # jac=lambda t, y: jac_tuning(t, y, p, p['dΔdt']),
                            )
     with open(fpath_r2b, 'wb') as f:
