@@ -26,7 +26,7 @@ p_si = {
 
 # τ_th_list = np.array([30,100,300,1000])*u.ns
 τ_th_list = np.array([30])*u.ns
-V_rb = np.concatenate((np.arange(0,3,1),np.arange(4,24,6)))*u.volt
+V_rb = np.concatenate((np.arange(0,3,0.5),np.arange(4,24,6)))*u.volt
 
 
 p_expt = {
@@ -36,8 +36,8 @@ p_expt = {
     'FWHM': 350 * u.MHz, # measured Lorentzian linewidth of single resonance
     'FWHM_i': 190 * u.MHz, # measured "intrinsic" Lorentzian linewidth of single resonance
     'splitting': 1.15*u.GHz, # measured double-lorentzian splitting
-    'Δ_min': -80*u.GHz, # f_cavity,0 - f_laser tuning minimum
-    'Δ_max': 5*u.GHz, # f_cavity,0 - f_laser tuning maximum
+    'Δ_min': -50*u.GHz, # f_cavity,0 - f_laser tuning minimum
+    'Δ_max': 10*u.GHz, # f_cavity,0 - f_laser tuning maximum
     'P_bus_max': 1.5 * u.mW, # max input power in bus waveguide
     'V_rb': V_rb,
     'τ_th': 30 * u.ns, # thermal "time constant" to fit
