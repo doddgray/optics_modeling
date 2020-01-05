@@ -25,7 +25,7 @@ mm_script_fname = "FixedPointSweep_mm_script.wls"
 
 hostname = socket.gethostname()
 if hostname=='dodd-laptop':
-    data_dir = "/home/dodd/google-drive/notebooks/IMEC V1 1550nm ring measurements/Thermal SOI ring cavity stability analysis"
+    data_dir = "/home/dodd/data/MM_PVDsweep"
     script_dir = "/home/dodd/google-drive/Documents/mathematica-scripts/"
     mm_script_fpath = path.normpath(path.join(script_dir,mm_script_fname))
     os.environ['WolframKernel'] = '/usr/local/Wolfram/Mathematica/12.0/Executables/WolframKernel'
@@ -88,7 +88,9 @@ def run_mm_script_parallel(params=params):
         params['γ'],params['μ'],params['r'],params['ζ'],
         params['τ_th'],params['η2'],params['τ_fc'],params['χ'],params['α'],params['η1'],params['τ_xfc'],params['η'],n_proc_def]
     cmd = [mm_script_fpath]+[f'{arg}' for arg in arg_list]
+    print(cmd)
     out = subp.run(cmd,check=True)
+    print(out)
     return out.returncode
 
 def process_mm_data_parallel(params=params,nEq=6):
@@ -810,8 +812,9 @@ def compute_PVΔ_sweep(p_expt=p_expt_def,p_mat=p_si,sweep_name='test',nEq=6,n_pr
             V_params_ss_list[sind]['data_dir'] = V_dir
             params_list.append(V_params_ss_list[sind])
 
-
-    out = map(run_mm_script_parallel,params_list)
+    for pp in params_list:
+        run_mm_script_parallel(pp)
+    # out = map(run_mm_script_parallel,params_list)
     with Pool(processes=n_proc) as pool:
         # out = pool.map(run_mm_script_parallel,params_list)
         res = pool.map(process_mm_data_parallel,params_list)
