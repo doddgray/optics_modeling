@@ -954,6 +954,7 @@ def reprocess_PVΔ_sweep(sweep_name='test',nEq=6,n_proc=n_proc_def,data_dir=data
     p_mat = p_si
     sweep_data_fname = 'data.dat'
     sweep_data_fpath = path.join(sweep_dir,sweep_data_fname)
+    print('sweep_data_fpath: ' + sweep_data_fpath)
     mfname = 'metadata.dat'
     mfpath = path.join(sweep_dir,mfname)
     # add a couple other things to kwargs and save as a metadata dict
@@ -1002,7 +1003,9 @@ def reprocess_PVΔ_sweep(sweep_name='test',nEq=6,n_proc=n_proc_def,data_dir=data
             params_list.append(V_params_ss_list[sind])
     with Pool(processes=n_proc) as pool:
         res = pool.map(process_mm_data_parallel,params_list)
-    for Vind, VV in enumerate(p_expt['V_rb']):
+    print('finished parallel data processing, entering result compilation routine')
+    for Vind, VV in enumerate(V_rb):
+        print(f'Vind: {Vind}, VV: {VV:3.3f}')
         # fill in dataset arrays, creating them first if Vind==0
         if Vind==0:
             Pa = np.zeros((ns,nV,nΔ,nEq),dtype=np.float64)
