@@ -24,6 +24,20 @@ def _n_linbo3(λ,T=300*u.degK,axis='e'):
 def _ng_linbo3(λ,T=300*u.degK,axis='e'):
     return nlo.n_g_MgO_LN(λ*u.um,T,axis=axis)
 
+def _n_si3n4(λ,T=300*u.degK):
+    return nlo.n_Si3N4(λ*u.um,T)[0,0]
+
+def _ng_si3n4(λ,T=300*u.degK):
+    return nlo.n_g_Si3N4(λ*u.um,T)
+
+def _n_sio2(λ,T=300*u.degK):
+    return nlo.n_SiO2(λ*u.um,T)[0,0]
+
+def _ng_sio2(λ,T=300*u.degK):
+    return nlo.n_g_SiO2(λ*u.um,T)
+
+
+# n_Si3N4(lm_in,T_in)
 
 ### Cauchy Equation fit coefficients for Gavin's ALD alumina films ###
 # Eqn. form:
@@ -33,6 +47,25 @@ A_alumina = 1.602
 B_alumina = 0.01193
 C_alumina = -0.00036
 
+
+### Cauchy Equation fit coefficients for 100nm Hafnia (HfO2) films ###
+## taken from
+## Khoshman and Kordesch. "Optical properties of a-HfO2 thin films." Surface and Coatings Technology 201.6 (2006)
+## great fit to measured data from sputtered amorphous Hafnia, haven't found one for ALD Hafnia specifically
+## they also report loss, with a sharp absorption edge near 5.68 ± 0.09 eV (~218 nm)
+# Eqn. form:
+# n = A + B / lam**2 + C / lam**4
+# ng = A + 3 * B / lam**2 + 5 * C / lam**4
+
+# # fit for spectroscopic ellipsometer measurement for a 250nm thick film, good 300-1400nm
+# A_hafnia = 1.85
+# B_hafnia = 1.17e-8
+# C_hafnia = 0.0
+
+# fit for spectroscopic ellipsometer measurement for a 112nm thick film, good 300-1400nm
+A_hafnia = 1.86
+B_hafnia = 7.16e-9
+C_hafnia = 0.0
 
 # In_{1-x} Ga_x As_y P_{1-y}
 # Modified single-oscillator model
@@ -67,13 +100,15 @@ def get_index(mat, lam):
         #    J. Electrochim. Soc. 120, 295-300 (1973)
         # 2) T. Baak. Silicon oxynitride; a material for GRIN optics,
         #    Appl. Optics 21, 1069-1072 (1982)
-        return np.sqrt(1 + (2.8939 * lam ** 2) / (lam ** 2 - 0.1396 ** 2))
+        # return np.sqrt(1 + (2.8939 * lam ** 2) / (lam ** 2 - 0.1396 ** 2))
+        return _n_si3n4(lam)
     elif (mat == 'SiO2'):
         # I. H. Malitson. Interspecimen Comparison of the Refractive Index of Fused Silica,
         # J. Opt. Soc. Am. 55, 1205-1208 (1965)
-        return np.sqrt(
-            np.maximum(1 + (0.6961 * lam ** 2) / (lam ** 2 - 0.06840 ** 2) + (0.4079 * lam ** 2) / (lam ** 2 - 0.1162 ** 2)
-            + (0.8974 * lam ** 2) / (lam ** 2 - 9.8961 ** 2), 1))
+        # return np.sqrt(
+        #     np.maximum(1 + (0.6961 * lam ** 2) / (lam ** 2 - 0.06840 ** 2) + (0.4079 * lam ** 2) / (lam ** 2 - 0.1162 ** 2)
+        #     + (0.8974 * lam ** 2) / (lam ** 2 - 9.8961 ** 2), 1))
+        return _n_sio2(lam)
     elif (mat == 'Si'):
         # 1) C. D. Salzberg and J. J. Villa. Infrared Refractive Indexes of Silicon,
         #    Germanium and Modified Selenium Glass, J. Opt. Soc. Am., 47, 244-246 (1957)
@@ -84,6 +119,8 @@ def get_index(mat, lam):
             + (1.5413 * lam ** 2) / (lam ** 2 - 1104 ** 2))
     elif (mat == 'Alumina'):
         return A_alumina + B_alumina / lam**2 + C_alumina / lam**4  # Cauchy Eqn. fit from Gavin's ALD alumina
+    elif (mat == 'Hafnia'):
+        return A_hafnia + B_hafnia / lam**2 + C_hafnia / lam**4  # Cauchy Eqn. fit from cited paper above for sputtered Hafnia
     elif (mat == 'Air'):
         return 1.0
     elif (mat == 'InP'):
@@ -104,10 +141,16 @@ def get_index(mat, lam):
 def get_ng(mat, lam):
     if (mat == 'InP'):
         return _ng_ingaasp(0, lam * 1e6)
+    elif (mat == 'Si3N4'):
+        return _ng_si3n4(lam)
+    elif (mat == 'SiO2'):
+        return _ng_sio2(lam)
     elif (mat == 'LiNbO3'):
         return _ng_linbo3(lam)
     elif (mat == 'Alumina'):
         return A_alumina + 3 * B_alumina / lam**2 + 5 * C_alumina / lam**4  # Cauchy Eqn. fit from Gavin's ALD alumina, analytic derivative for ng
+    elif (mat == 'Hafnia'):
+        return A_hafnia + 3 * B_hafnia / lam**2 + 5* C_hafnia / lam**4  # Cauchy Eqn. fit from cited paper above for sputtered Hafnia
     elif (mat.startswith('InGaAsP_Q')):
         Eg = 1.24 / float(mat[9:])
         assert (0.75 <= Eg <= 1.35)
