@@ -9,9 +9,11 @@ from io import StringIO
 import warnings
 import h5py
 import sys
+from pathlib import Path
 
-### import LiNbO3 index model ###
-nlo_dir = '/home/dodd/github/optics_modeling/NLO_tools'
+### import index models ###
+home = str( Path.home() )
+nlo_dir = home+'/github/optics_modeling/NLO_tools'
 if nlo_dir not in sys.path:
     sys.path.append(nlo_dir)
 import NLO_tools as nlo

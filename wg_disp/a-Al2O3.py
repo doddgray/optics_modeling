@@ -22,7 +22,7 @@ from instrumental import u
 
 
 params = {'w_top_list': np.linspace(400,1200,3) * u.nm,
-         'λ_list': np.linspace(0.45,1.8,10)*u.um,
+         'λ_list': np.linspace(0.45,1.8,3)*u.um,
          'λ_factor_list': np.array([1,0.95,1.05]),
          'θ': 10, # sidewall internal angle at top of core, degrees
          't_core': 200 * u.nm,  # core thickness

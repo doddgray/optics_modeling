@@ -203,7 +203,7 @@ def collect_wgparams_sweep(params,sweep_name='test',n_proc=n_proc_def,data_dir=d
     t_start = time()
     start_timestamp_str = datetime.strftime(datetime.now(),'%Y_%m_%d_%H_%M_%S')
     metadata['t_start'] = start_timestamp_str
-    print(metadata)
+    # print(metadata)
     with open(mfpath, 'wb') as f:
         pickle.dump(metadata,f)
     params_list = []
@@ -249,8 +249,8 @@ def collect_wgparams_sweep(params,sweep_name='test',n_proc=n_proc_def,data_dir=d
             p_mat_core_list[inds] = out['p_mat_core']
             p_mat_core_x_list[inds] = out['p_mat_core_x']
         else:
-            neffList[inds] = np.nan
-            ngList[inds] = np.nan
+            neff_list[inds] = np.nan
+            ng_list[inds] = np.nan
             p_mat_core_list[inds] = np.nan
             p_mat_core_x_list[inds] = np.nan
 
