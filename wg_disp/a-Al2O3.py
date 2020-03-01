@@ -21,14 +21,14 @@ from wg_disp import collect_wgparams_sweep, data_dir, n_proc_def
 from instrumental import u
 
 
-params = {'w_top_list': np.linspace(400,1200,3) * u.nm,
-         'λ_list': np.linspace(0.45,1.8,3)*u.um,
+params = {'w_top_list': np.linspace(400,1200,5) * u.nm,
+         'λ_list': np.linspace(0.45,1.8,20)*u.um,
          'λ_factor_list': np.array([1,0.95,1.05]),
          'θ': 10, # sidewall internal angle at top of core, degrees
          't_core': 200 * u.nm,  # core thickness
          't_etch': 200 * u.nm,  # partial (or complete) etch depth
          'mat_core': 'Alumina',
-         'mat_clad': 'SiO2',
+         'mat_clad': 'Air',
          'Xgrid': 4, # x lattice vector
          'Ygrid': 4, # y lattice vector
          'n_points': 32, # number of k-points simulated
@@ -37,7 +37,7 @@ params = {'w_top_list': np.linspace(400,1200,3) * u.nm,
  }
 
 collect_wgparams_sweep(params,
-                        sweep_name='Al2O3_SiO2',
+                        sweep_name='Al2O3_Air',
                         n_proc=n_proc_def,
                         data_dir=data_dir,
                         verbose=True,

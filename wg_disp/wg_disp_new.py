@@ -31,7 +31,7 @@ from instrumental import u
 ###
 hostname = socket.gethostname()
 if hostname=='dodd-laptop':
-    data_dir = "/home/dodd/data/wg_disp"
+    data_dir = "/home/dodd/data/ODEInt_PVDsweep"
     n_proc_def = 6
 else: # assume I'm on a MTL server or something
     home = str( Path.home() )

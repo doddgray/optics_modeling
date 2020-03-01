@@ -149,6 +149,8 @@ def get_ng(mat, lam):
         return _ng_sio2(lam)
     elif (mat == 'LiNbO3'):
         return _ng_linbo3(lam)
+    elif (mat == 'Air'):
+        return 1.0
     elif (mat == 'Alumina'):
         return A_alumina + 3 * B_alumina / lam**2 + 5 * C_alumina / lam**4  # Cauchy Eqn. fit from Gavin's ALD alumina, analytic derivative for ng
     elif (mat == 'Hafnia'):
