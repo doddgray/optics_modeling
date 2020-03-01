@@ -49,7 +49,7 @@ else: # assume I'm on a MTL server or something
 ########### Parameters ###############
 ### swept parameters
 w_top_list = np.array([1200,1650,2000]) * u.nm
-λ_list = np.linspace(0.78,2.6,20)*u.um
+λ_list = np.linspace(0.78,2.6,3)*u.um
 ### fixed parameters
 t_core = 730*u.nm # core thickness
 t_etch = 730*u.nm # partial (or complete) etch depth
@@ -61,7 +61,7 @@ t_etch = 730*u.nm # partial (or complete) etch depth
 
 n_points = 32
 n_bands  = 4
-res      = 64
+res      = 32 #64
 k_points = mp.interpolate(n_points, [mp.Vector3(0.05, 0, 0), mp.Vector3(0.05*n_points, 0, 0)])
 
 lat = mp.Lattice(size=mp.Vector3(Xgrid, Ygrid,0))
@@ -182,6 +182,7 @@ def get_wgparams_parallel(params):
                         params['mat_core'],
                         params['mat_clad'],
                         )
+    out.update(params)
     sweep_dir = params['sweep_dir']
     fpath = path.normpath(path.join(params['sweep_dir'],params['fname']))
     with open(fpath,'wb') as f:
@@ -214,14 +215,18 @@ def collect_wgparams_sweep(params,sweep_name='test',n_proc=n_proc_def,data_dir=d
     t_start = time()
     start_timestamp_str = datetime.strftime(datetime.now(),'%Y_%m_%d_%H_%M_%S')
     metadata['t_start'] = start_timestamp_str
+    print(metadata)
     with open(mfpath, 'wb') as f:
         pickle.dump(metadata,f)
     params_list = []
     for (m, λ_factor) in enumerate(params['λ_factor_list']):
-        for (i, λ0) in enumerate(λ_list):
-            for (j, ww) in enumerate(w_top_list):
+        for (i, λ0) in enumerate(params['λ_list']):
+            for (j, ww) in enumerate(params['w_top_list']):
                 p = metadata.copy()
                 p['fname'] = f'{m}_{i}_{j}.dat'
+                p['m'] = m
+                p['j'] = j
+                p['i'] = i
                 p['λ'] = λ0 * λ_factor
                 p['w_top'] = ww
                 params_list += [p,]
@@ -231,31 +236,35 @@ def collect_wgparams_sweep(params,sweep_name='test',n_proc=n_proc_def,data_dir=d
     stop_timestamp_str = datetime.strftime(datetime.now(),'%Y_%m_%d_%H_%M_%S')
     t_elapsed_sec = time()-t_start
     if verbose:
-        print('PVΔ ODEInt sweep finished at ' + stop_timestamp_str)
+        print('wgparams sweep finished at ' + stop_timestamp_str)
     metadata['t_stop'] = stop_timestamp_str
     metadata['t_elapsed_sec'] = t_elapsed_sec
     with open(mfpath, 'wb') as f:
         pickle.dump(metadata,f)
 
     # compile output dataset
-    px_len = len(outList[0,0,0]['p_mat_core_x'])
-    neff_list = np.zeros([nfact, len(λ_list), len(w_top_list)], dtype=np.float)
-    ng_list   = np.zeros([nfact, len(λ_list), len(w_top_list)], dtype=np.float)
-    p_mat_core_list  = np.zeros([nfact, len(λ_list), len(w_top_list)], dtype=np.float)
-    p_mat_core_x_list  = np.zeros([nfact, len(λ_list), len(w_top_list), px_len], dtype=np.float)
+    px_len = len(out_list[0]['p_mat_core_x'])
+    neff_list = np.zeros([nfact, nλ, nw], dtype=np.float)
+    ng_list   = np.zeros([nfact, nλ, nw], dtype=np.float)
+    p_mat_core_list  = np.zeros([nfact, nλ, nw], dtype=np.float)
+    p_mat_core_x_list  = np.zeros([nfact, nλ, nw, px_len], dtype=np.float)
 
-    for ind in outList.keys():
-        out = outList[ind]
-        if out != {}:
-            neff_list[ind] = out['neff']
-            ng_list[ind] = out['ng']
-            p_mat_core_list[ind] = out['p_mat_core']
-            p_mat_core_x_list[ind] = out['p_mat_core_x']
+    for out_ind in range(len(out_list)):
+        out = out_list[out_ind]
+        m = out['m']
+        i = out['i']
+        j = out['j']
+        inds = m,i,j
+        if 'neff' in out.keys():
+            neff_list[inds] = out['neff']
+            ng_list[inds] = out['ng']
+            p_mat_core_list[inds] = out['p_mat_core']
+            p_mat_core_x_list[inds] = out['p_mat_core_x']
         else:
-            neffList[ind] = np.nan
-            ngList[ind] = np.nan
-            p_mat_core_list[ind] = np.nan
-            p_mat_core_x_list[ind] = np.nan
+            neffList[inds] = np.nan
+            ngList[inds] = np.nan
+            p_mat_core_list[inds] = np.nan
+            p_mat_core_x_list[inds] = np.nan
 
     np.save(sweep_data_fpath,
             {"neff": neff_list,
@@ -281,7 +290,7 @@ def collect_wgparams_sweep(params,sweep_name='test',n_proc=n_proc_def,data_dir=d
 
 
 params = {'w_top_list': np.array([1200,1650,2000]) * u.nm,
-         'λ_list': np.linspace(0.78,2.6,20)*u.um,
+         'λ_list': np.linspace(0.78,2.6,30)*u.um,
          'λ_factor_list': np.array([1,0.95,1.05]),
          'θ': 0, # sidewall internal angle at top of core, degrees
          't_core': 730 * u.nm,  # core thickness
@@ -298,13 +307,13 @@ collect_wgparams_sweep(params,
                         return_data=False,
                         )
 
-# outList = {}
+# out_list = {}
 # for (m, lamFact) in enumerate([1,0.95, 1.05]):
 #     for (i, lam0) in enumerate(λ_list):
 #         for (j, ww) in enumerate(w_top_list):
 #             lam = lam0 * lamFact
 #             # get_wgparams(w_top,θ,t_core,t_etch,lam,mat_core,mat_clad,do_func=None,)
-#             outList[(m, i, j)] = get_wgparams(ww,
+#             out_list[(m, i, j)] = get_wgparams(ww,
 #                                                 0, # θ, degrees
 #                                                 t_core,
 #                                                 t_core,
@@ -314,17 +323,17 @@ collect_wgparams_sweep(params,
 #                                                 do_func=None,
 #                                                 )
 #
-# px_len = len(outList[0,0,0]['p_mat_core_x'])
+# px_len = len(out_list[0,0,0]['p_mat_core_x'])
 # # print(f'ind0: {ind0}')
-# # print(f'len px: {len(outList[ind0]))}')
+# # print(f'len px: {len(out_list[ind0]))}')
 #
 # neff_list = np.zeros([3, len(λ_list), len(w_top_list)], dtype=np.float)
 # ng_list   = np.zeros([3, len(λ_list), len(w_top_list)], dtype=np.float)
 # p_mat_core_list  = np.zeros([3, len(λ_list), len(w_top_list)], dtype=np.float)
 # p_mat_core_x_list  = np.zeros([3, len(λ_list), len(w_top_list), px_len], dtype=np.float)
 #
-# for ind in outList.keys():
-#     out = outList[ind]
+# for ind in out_list.keys():
+#     out = out_list[ind]
 #     if out != {}:
 #         neff_list[ind] = out['neff']
 #         ng_list[ind] = out['ng']
