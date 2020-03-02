@@ -145,23 +145,23 @@ def get_wgparams(w_top,θ,t_core,t_etch,lam,mat_core,mat_clad,Xgrid,Ygrid,n_poin
 
 
 
-def get_wgparams_parallel(params):
-    out = get_wgparams(params['w_top'],
-                        params['θ'],
-                        params['t_core'],
-                        params['t_etch'],
-                        params['λ'],
-                        params['mat_core'],
-                        params['mat_clad'],
-                        params['Xgrid'],
-                        params['Ygrid'],
-                        params['n_points'],
-                        params['n_bands'],
-                        params['res'],
+def get_wgparams_parallel(p):
+    out = get_wgparams(p['w_top'],
+                        p['θ'],
+                        p['t_core'],
+                        p['t_etch'],
+                        p['λ'],
+                        p['mat_core'],
+                        p['mat_clad'],
+                        p['Xgrid'],
+                        p['Ygrid'],
+                        p['n_points'],
+                        p['n_bands'],
+                        p['res'],
                         )
-    out.update(params)
-    sweep_dir = params['sweep_dir']
-    fpath = path.normpath(path.join(params['sweep_dir'],params['fname']))
+    out.update(p)
+    sweep_dir = p['sweep_dir']
+    fpath = path.normpath(path.join(p['sweep_dir'],p['fname']))
     with open(fpath,'wb') as f:
             pickle.dump(out,f)
     return out
@@ -230,7 +230,7 @@ def collect_wgparams_sweep(params,sweep_name='test',n_proc=n_proc_def,data_dir=d
         pickle.dump(metadata,f)
 
     # compile output dataset
-    px_len = len(out_list[0]['p_mat_core_x'])
+    px_len = params['Xgrid'] * params['res'] #len(out_list[0]['p_mat_core_x'])
     neff_list = np.zeros([nfact, nλ, nw, nt_core, nθ], dtype=np.float)
     ng_list   = np.zeros([nfact, nλ, nw, nt_core, nθ], dtype=np.float)
     p_mat_core_list  = np.zeros([nfact, nλ, nw, nt_core, nθ], dtype=np.float)

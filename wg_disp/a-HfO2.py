@@ -26,11 +26,11 @@ params = {'w_top_list': np.linspace(300,1200,4) * u.nm,
          't_etch': 200 * u.nm,  # partial (or complete) etch depth
          'mat_core': 'Hafnia',
          'mat_clad': 'SiO2',
-         'Xgrid': 8, # x lattice vector
-         'Ygrid': 8, # y lattice vector
+         'Xgrid': 4, # x lattice vector
+         'Ygrid': 4, # y lattice vector
          'n_points': 32, # number of k-points simulated
          'n_bands': 4, # number of bands simulated
-         'res': 128, # real-space resolution
+         'res': 64, # real-space resolution
  }
 
 collect_wgparams_sweep(params,
