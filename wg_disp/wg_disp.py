@@ -186,6 +186,11 @@ def collect_wgparams_sweep(params,sweep_name='test',n_proc=n_proc_def,data_dir=d
     metadata['nw'] = nw
     nfact = len(params['λ_factor_list'])
     metadata['nfact'] = nfact
+    nt_core = len(params['t_core_list'])
+    metadata['nt_core'] = nt_core
+    nθ = len(params['θ_list'])
+    metadata['nθ'] = nθ
+
     metadata['sweep_dir'] = sweep_dir
     t_start = time()
     start_timestamp_str = datetime.strftime(datetime.now(),'%Y_%m_%d_%H_%M_%S')
@@ -197,14 +202,21 @@ def collect_wgparams_sweep(params,sweep_name='test',n_proc=n_proc_def,data_dir=d
     for (m, λ_factor) in enumerate(params['λ_factor_list']):
         for (i, λ0) in enumerate(params['λ_list']):
             for (j, ww) in enumerate(params['w_top_list']):
-                p = metadata.copy()
-                p['fname'] = f'{m}_{i}_{j}.dat'
-                p['m'] = m
-                p['j'] = j
-                p['i'] = i
-                p['λ'] = λ0 * λ_factor
-                p['w_top'] = ww
-                params_list += [p,]
+                for (k, ttc) in enumerate(params['t_core_list']):
+                    for (l, θθ) in enumerate(params['θ_list']):
+                        p = metadata.copy()
+                        p['fname'] = f'{m}_{i}_{j}_{k}_{l}.dat'
+                        p['m'] = m
+                        p['j'] = j
+                        p['i'] = i
+                        p['k'] = k
+                        p['l'] = l
+                        p['λ'] = λ0 * λ_factor
+                        p['w_top'] = ww
+                        p['t_core'] = ttc
+                        p['t_etch'] = ttc
+                        p['θ'] = θθ
+                        params_list += [p,]
     with Pool(processes=n_proc) as pool:
         out_list = pool.map(get_wgparams_parallel,params_list)
     # record stop time
@@ -219,17 +231,19 @@ def collect_wgparams_sweep(params,sweep_name='test',n_proc=n_proc_def,data_dir=d
 
     # compile output dataset
     px_len = len(out_list[0]['p_mat_core_x'])
-    neff_list = np.zeros([nfact, nλ, nw], dtype=np.float)
-    ng_list   = np.zeros([nfact, nλ, nw], dtype=np.float)
-    p_mat_core_list  = np.zeros([nfact, nλ, nw], dtype=np.float)
-    p_mat_core_x_list  = np.zeros([nfact, nλ, nw, px_len], dtype=np.float)
+    neff_list = np.zeros([nfact, nλ, nw, nt_core, nθ], dtype=np.float)
+    ng_list   = np.zeros([nfact, nλ, nw, nt_core, nθ], dtype=np.float)
+    p_mat_core_list  = np.zeros([nfact, nλ, nw, nt_core, nθ], dtype=np.float)
+    p_mat_core_x_list  = np.zeros([nfact, nλ, nw, nt_core, nθ, px_len], dtype=np.float)
 
     for out_ind in range(len(out_list)):
         out = out_list[out_ind]
         m = out['m']
         i = out['i']
         j = out['j']
-        inds = m,i,j
+        k = out['k']
+        l = out['l']
+        inds = m,i,j,k,l
         if 'neff' in out.keys():
             neff_list[inds] = out['neff']
             ng_list[inds] = out['ng']

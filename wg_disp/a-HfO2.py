@@ -6,7 +6,7 @@ a-Al2O3.py
 script for wg_disp, my adaptation of MPB waveguide dispersion code written
 by Ryan Hamerly.
 
-models amorphous alumina waveguide dispersion as a function of wavelength and
+models amorphous Hafnia waveguide dispersion as a function of wavelength and
 several geometric parameters
 
 @author: dodd
@@ -24,7 +24,7 @@ params = {'w_top_list': np.linspace(300,1200,4) * u.nm,
          'θ_list': np.array([0,20]), # sidewall internal angle at top of core, degrees
          't_core_list': np.array([100,200,500,1000]) * u.nm,  # core thickness
          't_etch': 200 * u.nm,  # partial (or complete) etch depth
-         'mat_core': 'Alumina',
+         'mat_core': 'Hafnia',
          'mat_clad': 'SiO2',
          'Xgrid': 8, # x lattice vector
          'Ygrid': 8, # y lattice vector
@@ -34,7 +34,7 @@ params = {'w_top_list': np.linspace(300,1200,4) * u.nm,
  }
 
 collect_wgparams_sweep(params,
-                        sweep_name='Al2O3_SiO2',
+                        sweep_name='HfO2_SiO2',
                         n_proc=n_proc_def,
                         data_dir=data_dir,
                         verbose=True,
@@ -45,7 +45,7 @@ params_air = params.copy()
 params_air['mat_clad'] = 'Air'
 
 collect_wgparams_sweep(params_air,
-                        sweep_name='Al2O3_Air',
+                        sweep_name='HfO2_Air',
                         n_proc=n_proc_def,
                         data_dir=data_dir,
                         verbose=True,
