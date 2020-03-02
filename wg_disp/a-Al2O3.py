@@ -18,11 +18,26 @@ from wg_disp import collect_wgparams_sweep, data_dir, n_proc_def
 from instrumental import u
 
 
-params = {'w_top_list': np.linspace(300,1200,4) * u.nm,
-         'λ_list': np.linspace(0.35,1.8,20)*u.um,
+# params = {'w_top_list': np.linspace(300,1200,4) * u.nm,
+#          'λ_list': np.linspace(0.35,1.8,20)*u.um,
+#          'λ_factor_list': np.array([1,0.95,1.05]),
+#          'θ_list': np.array([0,20]), # sidewall internal angle at top of core, degrees
+#          't_core_list': np.array([100,200,500,1000]) * u.nm,  # core thickness
+#          't_etch': 200 * u.nm,  # partial (or complete) etch depth
+#          'mat_core': 'Alumina',
+#          'mat_clad': 'SiO2',
+#          'Xgrid': 8, # x lattice vector
+#          'Ygrid': 8, # y lattice vector
+#          'n_points': 32, # number of k-points simulated
+#          'n_bands': 4, # number of bands simulated
+#          'res': 128, # real-space resolution
+#  }
+
+params = {'w_top_list': np.linspace(300,1200,1) * u.nm,
+         'λ_list': np.linspace(0.35,1.8,2)*u.um,
          'λ_factor_list': np.array([1,0.95,1.05]),
-         'θ_list': np.array([0,20]), # sidewall internal angle at top of core, degrees
-         't_core_list': np.array([100,200,500,1000]) * u.nm,  # core thickness
+         'θ_list': np.array([0]), # sidewall internal angle at top of core, degrees
+         't_core_list': np.array([500,]) * u.nm,  # core thickness
          't_etch': 200 * u.nm,  # partial (or complete) etch depth
          'mat_core': 'Alumina',
          'mat_clad': 'SiO2',
@@ -33,8 +48,9 @@ params = {'w_top_list': np.linspace(300,1200,4) * u.nm,
          'res': 128, # real-space resolution
  }
 
+
 collect_wgparams_sweep(params,
-                        sweep_name='Al2O3_SiO2',
+                        sweep_name='Al2O3_testSiO2',
                         n_proc=n_proc_def,
                         data_dir=data_dir,
                         verbose=True,
@@ -45,7 +61,7 @@ params_air = params.copy()
 params_air['mat_clad'] = 'Air'
 
 collect_wgparams_sweep(params_air,
-                        sweep_name='Al2O3_Air',
+                        sweep_name='Al2O3_testAir',
                         n_proc=n_proc_def,
                         data_dir=data_dir,
                         verbose=True,
