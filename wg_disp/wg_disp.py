@@ -146,19 +146,23 @@ def get_wgparams(w_top,θ,t_core,t_etch,lam,mat_core,mat_clad,Xgrid,Ygrid,n_poin
 
 
 def get_wgparams_parallel(p):
-    out = get_wgparams(p['w_top'],
-                        p['θ'],
-                        p['t_core'],
-                        p['t_etch'],
-                        p['λ'],
-                        p['mat_core'],
-                        p['mat_clad'],
-                        p['Xgrid'],
-                        p['Ygrid'],
-                        p['n_points'],
-                        p['n_bands'],
-                        p['res'],
-                        )
+    try:
+        out = get_wgparams(p['w_top'],
+                            p['θ'],
+                            p['t_core'],
+                            p['t_etch'],
+                            p['λ'],
+                            p['mat_core'],
+                            p['mat_clad'],
+                            p['Xgrid'],
+                            p['Ygrid'],
+                            p['n_points'],
+                            p['n_bands'],
+                            p['res'],
+                            )
+    except:
+        print('MPB error')
+        out = {}
     out.update(p)
     sweep_dir = p['sweep_dir']
     fpath = path.normpath(path.join(p['sweep_dir'],p['fname']))
