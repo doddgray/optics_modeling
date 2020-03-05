@@ -39,7 +39,7 @@ params = {'w_top_list': np.linspace(300,1500,9) * u.nm,
 #                         data_dir=data_dir,
 #                         verbose=True,
 #                         return_data=False,
-                        )
+                        # )
 
 params_air = params.copy()
 params_air['mat_clad'] = 'Air'
