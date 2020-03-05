@@ -33,12 +33,12 @@ params = {'w_top_list': np.linspace(300,1500,9) * u.nm,
          'res': 128, # real-space resolution
  }
 
-collect_wgparams_sweep(params,
-                        sweep_name='Al2O3_SiO2',
-                        n_proc=n_proc_def,
-                        data_dir=data_dir,
-                        verbose=True,
-                        return_data=False,
+# collect_wgparams_sweep(params,
+#                         sweep_name='Al2O3_SiO2',
+#                         n_proc=n_proc_def,
+#                         data_dir=data_dir,
+#                         verbose=True,
+#                         return_data=False,
                         )
 
 params_air = params.copy()
