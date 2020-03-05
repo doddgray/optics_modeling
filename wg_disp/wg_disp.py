@@ -36,7 +36,7 @@ if hostname=='dodd-laptop':
 else: # assume I'm on a MTL server or something
     home = str( Path.home() )
     data_dir = home+'/data/'
-    n_proc_def = 24
+    n_proc_def = 16
 
 ###
 
@@ -146,38 +146,45 @@ def get_wgparams(w_top,θ,t_core,t_etch,lam,mat_core,mat_clad,Xgrid,Ygrid,n_poin
 
 
 def get_wgparams_parallel(p):
-    try:
-        out = get_wgparams(p['w_top'],
-                            p['θ'],
-                            p['t_core'],
-                            p['t_etch'],
-                            p['λ'],
-                            p['mat_core'],
-                            p['mat_clad'],
-                            p['Xgrid'],
-                            p['Ygrid'],
-                            p['n_points'],
-                            p['n_bands'],
-                            p['res'],
-                            )
-    except:
-        print('MPB error')
-        out = {}
-    out.update(p)
-    sweep_dir = p['sweep_dir']
+    # check to see if this simulation has already been run and load old result
+    # if so. this allows large sweeps that crash in the middle to be restarted
+    # without changing the code and without re-running completed sims.
     fpath = path.normpath(path.join(p['sweep_dir'],p['fname']))
-    with open(fpath,'wb') as f:
-            pickle.dump(out,f)
+    if path.exists(fpath):
+        with open(fpath,'rb') as f:
+            out = pickle.load(f)
+    else:
+        try:
+            out = get_wgparams(p['w_top'],
+                                p['θ'],
+                                p['t_core'],
+                                p['t_etch'],
+                                p['λ'],
+                                p['mat_core'],
+                                p['mat_clad'],
+                                p['Xgrid'],
+                                p['Ygrid'],
+                                p['n_points'],
+                                p['n_bands'],
+                                p['res'],
+                                )
+        except:
+            print('MPB error')
+            out = {}
+        out.update(p)
+        with open(fpath,'wb') as f:
+                pickle.dump(out,f)
     return out
 
-def collect_wgparams_sweep(params,sweep_name='test',n_proc=n_proc_def,data_dir=data_dir,verbose=True,return_data=False):
+def collect_wgparams_sweep(params,sweep_name='test',n_proc=n_proc_def,data_dir=data_dir,sweep_dir=False,verbose=True,return_data=False):
     """
     Find waveguide dispersion using mpb
     """
-    timestamp_str = datetime.strftime(datetime.now(),'%Y_%m_%d_%H_%M_%S')
-    sweep_dir_name = 'wgparams_sweep_' + sweep_name + '_' + timestamp_str
-    sweep_dir = path.normpath(path.join(data_dir,sweep_dir_name))
-    makedirs(sweep_dir)
+    if not sweep_dir:
+        timestamp_str = datetime.strftime(datetime.now(),'%Y_%m_%d_%H_%M_%S')
+        sweep_dir_name = 'wgparams_sweep_' + sweep_name + '_' + timestamp_str
+        sweep_dir = path.normpath(path.join(data_dir,sweep_dir_name))
+        makedirs(sweep_dir)
     sweep_data_fname = 'data.npy'
     sweep_data_fpath = path.join(sweep_dir,sweep_data_fname)
     mfname = 'metadata.dat'
