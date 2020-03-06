@@ -38,6 +38,11 @@ def _n_sio2(λ,T=300*u.degK):
 def _ng_sio2(λ,T=300*u.degK):
     return nlo.n_g_SiO2(λ*u.um,T)
 
+def _n_mgf2(λ,T=300*u.degK):
+    return nlo.n_MgF2(λ*u.um,T)
+
+def _ng_mgf2(λ,T=300*u.degK):
+    return nlo.n_g_MgF2(λ*u.um,T)
 
 # n_Si3N4(lm_in,T_in)
 
@@ -111,6 +116,8 @@ def get_index(mat, lam):
         #     np.maximum(1 + (0.6961 * lam ** 2) / (lam ** 2 - 0.06840 ** 2) + (0.4079 * lam ** 2) / (lam ** 2 - 0.1162 ** 2)
         #     + (0.8974 * lam ** 2) / (lam ** 2 - 9.8961 ** 2), 1))
         return _n_sio2(lam)
+    elif (mat == 'MgF2'):
+        return _n_mgf2(lam)
     elif (mat == 'Si'):
         # 1) C. D. Salzberg and J. J. Villa. Infrared Refractive Indexes of Silicon,
         #    Germanium and Modified Selenium Glass, J. Opt. Soc. Am., 47, 244-246 (1957)
@@ -147,6 +154,8 @@ def get_ng(mat, lam):
         return _ng_si3n4(lam)
     elif (mat == 'SiO2'):
         return _ng_sio2(lam)
+    elif (mat == 'MgF2'):
+        return _ng_mgf2(lam)
     elif (mat == 'LiNbO3'):
         return _ng_linbo3(lam)
     elif (mat == 'Air'):

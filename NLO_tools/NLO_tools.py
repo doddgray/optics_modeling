@@ -12,10 +12,16 @@ import sympy as sp
 import numpy as np
 from instrumental import Q_, u
 
-##########################################################################
-###### Temperature Dependent Index, Group Index and GVD models
-###### for phase-matching calculations
-##########################################################################
+################################################################################
+################################################################################
+##           Temperature Dependent Index, Group Index and GVD models          ##
+##                       for phase-matching calculations                      ##
+################################################################################
+################################################################################
+
+################################################################################
+##                                MgO:LiNbO3                                  ##
+################################################################################
 def n_MgO_LN_sym(axis='e'):
     """This function creates a symbolic representation (using SymPy) of the
     Sellmeier Equation model for the temperature and wavelength dependence
@@ -101,7 +107,6 @@ def n_g_MgO_LN(lm_in,T_in,axis='e'):
     n_g = sp.lambdify([lm,T],n_g_sym,'numpy')
     return n_g(lm_um, T_C)
 
-
 def gvd_MgO_LN(lm_in,T_in,axis='e'):
     """Sellmeier Equation model for the temperature and wavelength dependence
     of the group velocity dispersion of 5% MgO:LiNbO3. Equation form is based on
@@ -122,6 +127,256 @@ def gvd_MgO_LN(lm_in,T_in,axis='e'):
     gvd = (1 / (2 * np.pi * (c**2))) * Q_(gvd_no_prefactors(lm_um,T_C),'um')
     return gvd.to('fs**2 / mm')
 
+
+################################################################################
+##                         LiB3O5, Lithium Triborate (LBO)                    ##
+################################################################################
+def n_LBO_sym(axis='Z'):
+    """This function creates a symbolic representation (using SymPy) of the
+    Sellmeier Equation model for the temperature and wavelength dependent
+    indices of refraction of LiB3O5 along all three principal axes, here labeled
+    'X', 'Y' and 'Z'.
+
+    Equation form is based on "Temperature dispersion of refractive indices in
+    β‐BaB2O4 and LiB3O5 crystals for nonlinear optical devices"
+    by Ghosh et al., Journal of Applied Physics 78, 6752 (1995)
+    https://doi.org/10.1063/1.360499
+
+    This model is then exported to other functions that use it and its
+    derivatives to return index, group index and GVD values as a function
+    of temperature and wavelength.
+
+    Variable units are lm in [um] and T in [deg C]
+
+    """
+    # coefficient values for each axis
+    lbo_coeffs = [
+    [1.4426279, 1.0109932, .011210197, 1.2363218, 91, -127.70167e-6, 122.13435e-6, 53.0e-3],
+    [1.5014015, 1.0388217, .0121571, 1.7567133, 91, 373.3387e-6, -415.10435e-6, 32.7e-3],
+    [1.448924, 1.1365228, .011676746, 1.5830069, 91, -446.95031e-6, 419.33410e-6, 43.5e-3],
+    ]
+
+    if axis is 'X':
+        A,B,C,D,E,G,H,lmig = lbo_coeffs[0]
+    elif axis is 'Y':
+        A,B,C,D,E,G,H,lmig = lbo_coeffs[1]
+    elif axis is 'Z':
+        A,B,C,D,E,G,H,lmig = lbo_coeffs[2]
+    else:
+        raise Exception('unrecognized axis! must be "X","Y" or "Z"')
+    # lm = sp.symbols('lm',positive=True)
+    # T_C = T.to(u.degC).m
+    # T0_C = 20. # reference temperature in [Deg C]
+    # dT = T_C - T0_C
+    lm,T = sp.symbols('lm, T',positive=True)
+    R = lm**2 / ( lm**2 - lmig**2 ) #'normalized dispersive wavelength' for thermo-optic model
+    dnsq_dT = G * R + H * R**2
+    n_sym = sp.sqrt( A + B * lm**2 / ( lm**2 - C ) + D * lm**2 / ( lm**2 - E ) + dnsq_dT * ( T - 20. ) )
+    # n_sym = sp.sqrt( A + B * lm**2 / ( lm**2 - C ) + D * lm**2 / ( lm**2 - E ) + ( G * ( lm**2 / ( lm**2 - lmig**2 ) ) + H * ( lm**2 / ( lm**2 - lmig**2 ) )**2 ) * ( T - 20. ) )
+    # n_sym = sp.sqrt( A + B * lm**2 / ( lm**2 - C ) + D * lm**2 / ( lm**2 - E ) + ( G * ( lm**2 / ( lm**2 - lmig**2 ) ) + H * ( lm**2 / ( lm**2 - lmig**2 ) )**2 ) * dT )
+    # n_sym =  A + B * lm**2 / ( lm**2 - C ) + D * lm**2 / ( lm**2 - E ) + ( G * ( lm**2 / ( lm**2 - lmig**2 ) ) + H * ( lm**2 / ( lm**2 - lmig**2 ) )**2 ) * dT
+    return lm,T, n_sym
+
+def n_LBO(lm_in,T_in,axis='Z'):
+    """Sellmeier Equation model for the temperature and wavelength dependence
+    of the index of refraction of LiB3O5. Equation form is based on
+    "Temperature dispersion of refractive indices in
+    β‐BaB2O4 and LiB3O5 crystals for nonlinear optical devices"
+    by Ghosh et al., Journal of Applied Physics 78, 6752 (1995)
+    https://doi.org/10.1063/1.360499
+
+    Variable units are lm in [um] and T in [deg C]
+
+    """
+    lm_um = np.array([Q_(lm_in).to(u.um).magnitude]).flatten()
+    T_C = np.array([Q_(T_in).to(u.degC).magnitude]).flatten()
+    lm, T, n_sym = n_LBO_sym(axis=axis)
+    n = sp.lambdify([lm,T],n_sym,'numpy')
+    # nsq = sp.lambdify([lm,T],n_sym,'numpy')
+    output = np.zeros((T_C.size,lm_um.size))
+    for T_idx, TT in enumerate(T_C):
+        output[T_idx,:] = n(lm_um, T_C[T_idx])
+    return output
+    # return n(lm_um)
+
+def n_g_LBO(lm_in,T_in,axis='Z'):
+    """Sellmeier Equation model for the temperature and wavelength dependence
+    of the group index of refraction of LiB3O5. Equation form is based on
+    "Temperature dispersion of refractive indices in
+    β‐BaB2O4 and LiB3O5 crystals for nonlinear optical devices"
+    by Ghosh et al., Journal of Applied Physics 78, 6752 (1995)
+    https://doi.org/10.1063/1.360499
+
+    Variable units are lm in [um] and T in [deg C]
+
+    """
+    lm_um = Q_(lm_in).to(u.um).magnitude
+    T_C = Q_(T_in).to(u.degC).magnitude
+    lm, T, n_sym = n_LBO_sym(axis=axis)
+    n_sym_prime = sp.diff(n_sym,lm)
+    n_g_sym = n_sym - lm*n_sym_prime
+    n_g = sp.lambdify([lm,T],n_g_sym,'numpy')
+    return n_g(lm_um, T_C)
+
+
+def gvd_LBO(lm_in,T_in,axis='Z'):
+    """Sellmeier Equation model for the temperature and wavelength dependence
+    of the group velocity dispersion of LiB3O5. Equation form is based on
+    "Temperature dispersion of refractive indices in
+    β‐BaB2O4 and LiB3O5 crystals for nonlinear optical devices"
+    by Ghosh et al., Journal of Applied Physics 78, 6752 (1995)
+    https://doi.org/10.1063/1.360499
+
+    Variable units are lm in [um] and T in [deg C]
+
+    """
+    lm_um = Q_(lm_in).to(u.um).magnitude
+    T_C = Q_(T_in).to(u.degC).magnitude
+    lm, T, n_sym = n_LBO_sym(axis=axis)
+    n_sym_double_prime = sp.diff(n_sym,lm,lm)
+    c = Q_(3e8,'m/s') # unitful definition of speed of light
+    gvd_sym_no_prefactors = (lm**3)*n_sym_double_prime # symbolic gvd without unitful prefactors, to be made unitful below
+    gvd_no_prefactors = sp.lambdify([lm,T],gvd_sym_no_prefactors,'numpy') # numerical gvd without unitful prefactors
+    gvd = (1 / (2 * np.pi * (c**2))) * Q_(gvd_no_prefactors(lm_um,T_C),'um')
+    return gvd.to('fs**2 / mm')
+
+
+################################################################################
+##                          crystalline MgF2                                  ##
+################################################################################
+def n_MgF2_sym(axis='e'):
+    """This function creates a symbolic representation (using SymPy) of the
+    Sellmeier Equation model for the wavelength dependence
+    of crystalline MgF2's ordinary and extraordinary indices of refraction as
+    well as the index of thin-film amorphous MgF2.
+
+    Sellmeier coefficients for crystalline MgF2 are taken from
+    "Refractive properties of magnesium fluoride"
+    by Dodge, Applied Optics 23 (12), pp.1980-1985 (1984)
+    https://doi.org/10.1364/AO.23.001980
+
+    Sellmeier coefficients for amorphous MgF2 are taken from
+    "Self-consistent optical constants of MgF2, LaF3, and CeF3 films"
+    by Rodríguez-de Marcos, et al. Optical Materials Express 7 (3) (2017)
+    https://doi.org/10.1364/OME.7.000989
+
+    This model is then exported to other functions that use it and its
+    derivatives to return index, group index and GVD values as a function
+    of temperature and wavelength.
+
+    Variable units are lm in [um] and T in [deg C]
+
+    """
+    if axis is 'e':
+        coeffs = [  (0.41344023,0.03684262), # A_i,λ_i Lorentz oscillator strength [1] and resonance wavelength [μm]
+                    (0.50497499,0.09076162),
+                    (2.4904862,23.771995),
+                    ]
+    elif axis is 'o':
+        coeffs = [  (0.48755108,0.04338408), # A_i,λ_i Lorentz oscillator strength [1] and resonance wavelength [μm]
+                    (0.39875031,0.09461442),
+                    (2.3120353,23.793604),
+                    ]
+    elif axis is 'a':
+        coeffs = [  (1.73,.0805), # A_i,λ_i Lorentz oscillator strength [1] and resonance wavelength [μm]
+                    ]
+    else:
+        raise Exception('unrecognized axis! must be "e", "o" or "a"')
+    lm, T = sp.symbols('lm T')
+    A0,λ0 = coeffs[0]
+    oscillators = A0 * lm**2 / (lm**2 - λ0**2)
+    if len(coeffs)>1:
+        for Ai,λi in coeffs[1:]:
+            oscillators += Ai * lm**2 / (lm**2 - λi**2)
+    n_sym = sp.sqrt( 1 + oscillators )
+    return lm, T, n_sym
+
+def n_MgF2(lm_in,T_in=300*u.degK,axis='e'):
+    """Sellmeier Equation model for the temperature and wavelength dependence
+    of the index of refraction of crystalline (axis='o' or 'e') and
+    amorphous (axis='a') MgF2.
+
+    Sellmeier coefficients for crystalline MgF2 are taken from
+    "Refractive properties of magnesium fluoride"
+    by Dodge, Applied Optics 23 (12), pp.1980-1985 (1984)
+    https://doi.org/10.1364/AO.23.001980
+
+    Sellmeier coefficients for amorphous MgF2 are taken from
+    "Self-consistent optical constants of MgF2, LaF3, and CeF3 films"
+    by Rodríguez-de Marcos, et al. Optical Materials Express 7 (3) (2017)
+    https://doi.org/10.1364/OME.7.000989
+
+    Variable units are lm in [um] and T in [deg C]
+
+    """
+    lm_um = np.array([Q_(lm_in).to(u.um).magnitude]).flatten()
+    T_C = np.array([Q_(T_in).to(u.degC).magnitude]).flatten()
+    lm, T, n_sym = n_MgF2_sym(axis=axis)
+    n = sp.lambdify([lm,T],n_sym,'numpy')
+    output = np.zeros((T_C.size,lm_um.size))
+    for T_idx, TT in enumerate(T_C):
+        output[T_idx,:] = n(lm_um, T_C[T_idx])
+    return output.squeeze()
+
+def n_g_MgF2(lm_in,T_in=300*u.degK,axis='e'):
+    """Sellmeier Equation model for the temperature and wavelength dependence
+    of the group index of refraction of crystalline (axis='o' or 'e') and
+    amorphous (axis='a') MgF2.
+
+    Sellmeier coefficients for crystalline MgF2 are taken from
+    "Refractive properties of magnesium fluoride"
+    by Dodge, Applied Optics 23 (12), pp.1980-1985 (1984)
+    https://doi.org/10.1364/AO.23.001980
+
+    Sellmeier coefficients for amorphous MgF2 are taken from
+    "Self-consistent optical constants of MgF2, LaF3, and CeF3 films"
+    by Rodríguez-de Marcos, et al. Optical Materials Express 7 (3) (2017)
+    https://doi.org/10.1364/OME.7.000989
+
+    Variable units are lm in [um] and T in [deg C]
+
+    """
+    lm_um = Q_(lm_in).to(u.um).magnitude
+    T_C = Q_(T_in).to(u.degC).magnitude
+    lm, T, n_sym = n_MgF2_sym(axis=axis)
+    n_sym_prime = sp.diff(n_sym,lm)
+    n_g_sym = n_sym - lm*n_sym_prime
+    n_g = sp.lambdify([lm,T],n_g_sym,'numpy')
+    return n_g(lm_um, T_C)
+
+def gvd_MgF2(lm_in,T_in=300*u.degK,axis='e'):
+    """Sellmeier Equation model for the temperature and wavelength dependence
+    of the group velocity dispersion of crystalline (axis='o' or 'e') and
+    amorphous (axis='a') MgF2.
+
+    Sellmeier coefficients for crystalline MgF2 are taken from
+    "Refractive properties of magnesium fluoride"
+    by Dodge, Applied Optics 23 (12), pp.1980-1985 (1984)
+    https://doi.org/10.1364/AO.23.001980
+
+    Sellmeier coefficients for amorphous MgF2 are taken from
+    "Self-consistent optical constants of MgF2, LaF3, and CeF3 films"
+    by Rodríguez-de Marcos, et al. Optical Materials Express 7 (3) (2017)
+    https://doi.org/10.1364/OME.7.000989
+
+    Variable units are lm in [um] and T in [deg C]
+
+    """
+    lm_um = Q_(lm_in).to(u.um).magnitude
+    T_C = Q_(T_in).to(u.degC).magnitude
+    lm, T, n_sym = n_MgF2_sym(axis=axis)
+    n_sym_double_prime = sp.diff(n_sym,lm,lm)
+    c = Q_(3e8,'m/s') # unitful definition of speed of light
+    gvd_sym_no_prefactors = (lm**3)*n_sym_double_prime # symbolic gvd without unitful prefactors, to be made unitful below
+    gvd_no_prefactors = sp.lambdify([lm,T],gvd_sym_no_prefactors,'numpy') # numerical gvd without unitful prefactors
+    gvd = (1 / (2 * np.pi * (c**2))) * Q_(gvd_no_prefactors(lm_um,T_C),'um')
+    return gvd.to('fs**2 / mm')
+
+
+
+################################################################################
+##                         Gallium Arsenide (GaAs)                            ##
+################################################################################
 
 def n_GaAs_sym():
     """This function creates a symbolic representation (using SymPy) of the

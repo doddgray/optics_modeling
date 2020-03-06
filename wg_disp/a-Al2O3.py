@@ -54,3 +54,15 @@ collect_wgparams_sweep(params_air,
                         verbose=True,
                         return_data=False,
                         )
+
+params_mgf2 = params.copy()
+params_mgf2['mat_clad'] = 'MgF2'
+
+
+collect_wgparams_sweep(params_mgf2,
+                        sweep_name='Al2O3_MgF2',
+                        n_proc=n_proc_def,
+                        data_dir=data_dir,
+                        verbose=True,
+                        return_data=False,
+                        )
