@@ -74,7 +74,7 @@ params_sio2_subs['mat_clad'] = 'Air'
 params_sio2_subs['mat_subs'] = 'SiO2'
 
 collect_wgparams_sweep(params_sio2_subs,
-                        sweep_name='Al2O3_SubsSiO2',
+                        sweep_name='HfO2_SubsSiO2',
                         n_proc=n_proc_def,
                         data_dir=data_dir,
                         verbose=True,
@@ -86,7 +86,7 @@ params_mgf2_subs['mat_clad'] = 'Air'
 params_mgf2_subs['mat_subs'] = 'MgF2'
 
 collect_wgparams_sweep(params_mgf2_subs,
-                        sweep_name='Al2O3_SubsMgF2',
+                        sweep_name='HfO2_SubsMgF2',
                         n_proc=n_proc_def,
                         data_dir=data_dir,
                         verbose=True,
