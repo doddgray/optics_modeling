@@ -42,7 +42,7 @@ else: # assume I'm on a MTL server or something
 
 
 
-def get_wgparams(w_top,θ,t_core,t_etch,lam,mat_core,mat_clad,Xgrid,Ygrid,n_points,n_bands=4,res=32,do_func=None,):
+def get_wgparams(w_top,θ,t_core,t_etch,lam,mat_core,mat_clad,Xgrid,Ygrid,n_points,mat_subs=None,n_bands=4,res=32,do_func=None,):
     """
     Solves for mode, n_eff and ng_eff at some wavelength lam for a set of
     geometry and material parameters.
@@ -76,6 +76,12 @@ def get_wgparams(w_top,θ,t_core,t_etch,lam,mat_core,mat_clad,Xgrid,Ygrid,n_poin
         # print('adding slab block')
     else:
         geom = [core,]
+    if mat_subs:
+        n_subs = mu.get_index(mat_subs, lam)
+        ng_subs = mu.get_ng(mat_subs, lam)
+        med_subs = mp.Medium(index=n_subs)
+        subs = mp.Block(size=mp.Vector3(mp.inf, Ygrid/2. , mp.inf), center=mp.Vector3(0, -Ygrid/4., 0),material=med_subs)
+        geom += [subs,]
 
     ms = mpb.ModeSolver(geometry_lattice=lat,
                         geometry=[],
@@ -91,7 +97,10 @@ def get_wgparams(w_top,θ,t_core,t_etch,lam,mat_core,mat_clad,Xgrid,Ygrid,n_poin
     with pipes(stdout=blackhole, stderr=STDOUT):
         ms.init_params(mp.NO_PARITY, False)
         eps = np.array(ms.get_epsilon())
-    mat_core_mask = (eps - n_clad ** 2) / (n_core ** 2 - n_clad ** 2)
+    # mat_core_mask = (eps - n_clad ** 2) / (n_core ** 2 - n_clad ** 2)
+    mat_core_mask = (np.abs(np.sqrt(eps) - n_core ) / n_core) < 0.01
+    if mat_subs:
+        mat_subs_mask = (np.abs(np.sqrt(eps) - n_subs ) / n_subs) < 0.01
 
     out = {}
 
@@ -109,7 +118,11 @@ def get_wgparams(w_top,θ,t_core,t_etch,lam,mat_core,mat_clad,Xgrid,Ygrid,n_poin
             p_mat_core_x = (epwr * mat_core_mask).sum(-1)
             p_mat_core = p_mat_core_x.sum()
             ng_nodisp = 1 / ms.compute_one_group_velocity_component(mp.Vector3(0, 0, 1), band)
-            ng = ng_nodisp * (p_mat_core * (ng_core / n_core) + (1 - p_mat_core) * (ng_clad / n_clad))
+            if mat_subs:
+                p_mat_subs = (epwr * mat_subs_mask).sum()
+                ng = ng_nodisp * ( p_mat_core * (ng_core / n_core) + p_mat_subs * (ng_subs / n_subs) + (1 - p_mat_core - p_mat_subs) * (ng_clad / n_clad))
+            else:
+                ng = ng_nodisp * (p_mat_core * (ng_core / n_core) + (1 - p_mat_core) * (ng_clad / n_clad))
 
             # Output various stuff.
             out['band'] = band
@@ -165,6 +178,7 @@ def get_wgparams_parallel(p):
                                 p['Xgrid'],
                                 p['Ygrid'],
                                 p['n_points'],
+                                p['mat_subs'],
                                 p['n_bands'],
                                 p['res'],
                                 )
