@@ -38,7 +38,7 @@ if hostname=='dodd-laptop':
 elif hostname=='hogwarts4':
     home = str( Path.home() )
     data_dir = home+'/data/'
-    n_proc_def = 8
+    n_proc_def = 4
 else: # assume I'm on a MTL server or something
     home = str( Path.home() )
     data_dir = home+'/data/'
