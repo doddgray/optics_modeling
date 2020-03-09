@@ -36,7 +36,7 @@ if hostname=='dodd-laptop':
 elif hostname=='hogwarts4':
     home = str( Path.home() )
     data_dir = home+'/data/'
-    n_proc_def = 4
+    n_proc_def = 8
 else: # assume I'm on a MTL server or something
     home = str( Path.home() )
     data_dir = home+'/data/'
@@ -44,7 +44,18 @@ else: # assume I'm on a MTL server or something
 
 ###
 
-
+# set to lowest priority, this is windows only, on Unix use ps.nice(19)
+def limit_cpu():
+    """
+    Initializer for Pool worker processes to make sure they get out of the way
+    when other users of shared machines start new processes.
+    Based on: 
+    https://stackoverflow.com/questions/42103367/limit-total-cpu-usage-in-python-multiprocessing
+    """
+    "is called at every process start"
+    p = psutil.Process(os.getpid())
+    # p.nice(psutil.BELOW_NORMAL_PRIORITY_CLASS) # windows
+    p.nice(16) # Unix, lowest priority is 19
 
 def get_wgparams(w_top,θ,t_core,t_etch,lam,mat_core,mat_clad,Xgrid,Ygrid,n_points,mat_subs=None,n_bands=4,res=32,do_func=None,):
     """
@@ -246,7 +257,7 @@ def collect_wgparams_sweep(params,sweep_name='test',n_proc=n_proc_def,data_dir=d
                         p['t_etch'] = ttc
                         p['θ'] = θθ
                         params_list += [p,]
-    with Pool(processes=n_proc) as pool:
+    with Pool(n_proc,limit_cpu) as pool:
         out_list = pool.map(get_wgparams_parallel,params_list)
     # record stop time
     stop_timestamp_str = datetime.strftime(datetime.now(),'%Y_%m_%d_%H_%M_%S')
