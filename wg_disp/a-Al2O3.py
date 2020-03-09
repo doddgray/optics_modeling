@@ -72,9 +72,12 @@ params_sio2_subs = params.copy()
 params_sio2_subs['mat_clad'] = 'Air'
 params_sio2_subs['mat_subs'] = 'SiO2'
 
+restart_sweep_dir = '/homes/dodd/data/wgparams_sweep_Al2O3_SubsSiO2_2020_03_08_09_54_18'
+
 collect_wgparams_sweep(params_sio2_subs,
                         sweep_name='Al2O3_SubsSiO2',
                         n_proc=n_proc_def,
+                        sweep_dir=restart_sweep_dir,
                         data_dir=data_dir,
                         verbose=True,
                         return_data=False,

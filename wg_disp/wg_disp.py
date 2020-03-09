@@ -33,6 +33,10 @@ hostname = socket.gethostname()
 if hostname=='dodd-laptop':
     data_dir = "/home/dodd/data/wg_disp"
     n_proc_def = 6
+elif hostname=='hogwarts4':
+    home = str( Path.home() )
+    data_dir = home+'/data/'
+    n_proc_def = 8
 else: # assume I'm on a MTL server or something
     home = str( Path.home() )
     data_dir = home+'/data/'
