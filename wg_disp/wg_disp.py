@@ -35,14 +35,17 @@ hostname = socket.gethostname()
 if hostname=='dodd-laptop':
     data_dir = "/home/dodd/data/wg_disp"
     n_proc_def = 6
+    nice_level_def = 19 # Unix, lowest priority is 19
 elif hostname=='hogwarts4':
     home = str( Path.home() )
     data_dir = home+'/data/'
     n_proc_def = 12
+    nice_level_def = 19 # Unix, lowest priority is 19
 else: # assume I'm on a MTL server or something
     home = str( Path.home() )
     data_dir = home+'/data/'
     n_proc_def = 16
+    nice_level_def = 19 # Unix, lowest priority is 19
 
 ###
 
@@ -51,15 +54,15 @@ def limit_cpu():
     """
     Initializer for Pool worker processes to make sure they get out of the way
     when other users of shared machines start new processes.
-    Based on: 
+    Based on:
     https://stackoverflow.com/questions/42103367/limit-total-cpu-usage-in-python-multiprocessing
     """
     "is called at every process start"
     p = psutil.Process(os.getpid())
     # p.nice(psutil.BELOW_NORMAL_PRIORITY_CLASS) # windows
-    p.nice(16) # Unix, lowest priority is 19
+    p.nice(nice_level_def) # Unix, lowest priority is 19
 
-def get_wgparams(w_top,θ,t_core,t_etch,lam,mat_core,mat_clad,Xgrid,Ygrid,n_points,mat_subs=None,n_bands=4,res=32,do_func=None,):
+def get_wgparams(w_top,θ,t_core,t_etch,lam,mat_core,mat_clad,Xgrid,Ygrid,n_points,mat_subs=None,n_bands=4,res=32,edge_gap=1,do_func=None,):
     """
     Solves for mode, n_eff and ng_eff at some wavelength lam for a set of
     geometry and material parameters.
@@ -86,7 +89,7 @@ def get_wgparams(w_top,θ,t_core,t_etch,lam,mat_core,mat_clad,Xgrid,Ygrid,n_poin
            ]
     core = mp.Prism(verts_core, height=mp.inf, material=med_core)
     if t_etch<t_core:   # partial etch
-        slab = mp.Block(size=mp.Vector3(mp.inf, t_core-t_etch , mp.inf), center=mp.Vector3(0, (t_core-t_etch), 0),material=med_core)
+        slab = mp.Block(size=mp.Vector3(Xgrid-edge_gap, t_core-t_etch , mp.inf), center=mp.Vector3(0, (t_core-t_etch), 0),material=med_core)
         geom = [core,
                 slab,
                 ]
@@ -97,8 +100,13 @@ def get_wgparams(w_top,θ,t_core,t_etch,lam,mat_core,mat_clad,Xgrid,Ygrid,n_poin
         n_subs = mu.get_index(mat_subs, lam)
         ng_subs = mu.get_ng(mat_subs, lam)
         med_subs = mp.Medium(index=n_subs)
-        subs = mp.Block(size=mp.Vector3(mp.inf, Ygrid/2. , mp.inf), center=mp.Vector3(0, -Ygrid/4., 0),material=med_subs)
+        subs = mp.Block(size=mp.Vector3(Xgrid-edge_gap, (Ygrid-edge_gap)/2. , mp.inf), center=mp.Vector3(0, -(Ygrid-edge_gap)/4., 0),material=med_subs)
         geom += [subs,]
+        n_guess = (n_subs+n_core)/2.
+        n_min = n_subs
+    else:
+        n_guess = (n_clad+n_core)/2.
+        n_min = n_subs
 
     ms = mpb.ModeSolver(geometry_lattice=lat,
                         geometry=[],
@@ -134,33 +142,38 @@ def get_wgparams(w_top,θ,t_core,t_etch,lam,mat_core,mat_clad,Xgrid,Ygrid,n_poin
             epwr = eps_ei2.sum(-1) / eps_ei2.sum()
             p_mat_core_x = (epwr * mat_core_mask).sum(-1)
             p_mat_core = p_mat_core_x.sum()
-            ng_nodisp = 1 / ms.compute_one_group_velocity_component(mp.Vector3(0, 0, 1), band)
+            p_x = epwr.sum(-1)
+            p_y = epwr.sum(0)
+            ng_geom = 1 / ms.compute_one_group_velocity_component(mp.Vector3(0, 0, 1), band)
             if mat_subs:
                 p_mat_subs = (epwr * mat_subs_mask).sum()
-                ng = ng_nodisp * ( p_mat_core * (ng_core / n_core) + p_mat_subs * (ng_subs / n_subs) + (1 - p_mat_core - p_mat_subs) * (ng_clad / n_clad))
+                ng = ng_geom * ( p_mat_core * (ng_core / n_core) + p_mat_subs * (ng_subs / n_subs) + (1 - p_mat_core - p_mat_subs) * (ng_clad / n_clad))
             else:
-                ng = ng_nodisp * (p_mat_core * (ng_core / n_core) + (1 - p_mat_core) * (ng_clad / n_clad))
+                ng = ng_geom * (p_mat_core * (ng_core / n_core) + (1 - p_mat_core) * (ng_clad / n_clad))
 
             # Output various stuff.
             out['band'] = band
             out['ng'] = ng
+            out['ng_geom'] = ng_geom
             out['p_mat_core'] = p_mat_core
             out['p_mat_core_x'] = p_mat_core_x
+            out['p_x'] = p_x
+            out['p_y'] = p_y
 
             if (do_func != None):
                 do_func(out, ms, band)
 
     with pipes(stdout=blackhole, stderr=STDOUT):
-        k = ms.find_k(mp.NO_PARITY,
-                      1/lam,
-                      1,
-                      1,
-                      mp.Vector3(0, 0, 1),
-                      1e-4,
-                      (n_clad+n_core)/(2*lam),
-                      n_clad/lam,
-                      n_core/lam,
-                      get_fieldprops,
+        k = ms.find_k(mp.NO_PARITY,             # parity (meep parity object)
+                      1/lam,                    # ω at which to solve for k
+                      1,                        # band_min (find k(ω) for bands
+                      1,                        # band_max  band_min:band_max)
+                      mp.Vector3(0, 0, 1),      # k direction to search
+                      1e-4,                     # fractional k error tolerance
+                      n_guess/lam,              # kmag_guess, |k| estimate
+                      n_min/lam,                # kmag_min (find k in range
+                      n_core/lam,               # kmag_max  kmag_min:kmag_max)
+                      get_fieldprops,           # band_func to be run on soln.
                       )
 
     if (out == {}):
@@ -172,8 +185,6 @@ def get_wgparams(w_top,θ,t_core,t_etch,lam,mat_core,mat_clad,Xgrid,Ygrid,n_poin
     print ("lam = {:.2f}, w_top = {:.2f}, θ = {:.2f}, t_core = {:.2f}, t_etch = {:.2f}, neff = {:.3f}, ng = {:.3f}, "
            "p_mat_core = {:.2f}".format(lam, w_top, θ, t_core, t_etch, out['neff'], out['ng'], out['p_mat_core'],))
     return out
-
-
 
 def get_wgparams_parallel(p):
     # check to see if this simulation has already been run and load old result
@@ -198,6 +209,7 @@ def get_wgparams_parallel(p):
                                 p['mat_subs'],
                                 p['n_bands'],
                                 p['res'],
+                                p['edge_gap'],
                                 )
         except:
             print('MPB error')
@@ -272,11 +284,15 @@ def collect_wgparams_sweep(params,sweep_name='test',n_proc=n_proc_def,data_dir=d
         pickle.dump(metadata,f)
 
     # compile output dataset
-    px_len = params['Xgrid'] * params['res'] #len(out_list[0]['p_mat_core_x'])
+    px_len = params['Xgrid'] * params['res']
+    py_len = params['Ygrid'] * params['res']
     neff_list = np.zeros([nfact, nλ, nw, nt_core, nθ], dtype=np.float)
     ng_list   = np.zeros([nfact, nλ, nw, nt_core, nθ], dtype=np.float)
+    ng_geom_list   = np.zeros([nfact, nλ, nw, nt_core, nθ], dtype=np.float)
     p_mat_core_list  = np.zeros([nfact, nλ, nw, nt_core, nθ], dtype=np.float)
     p_mat_core_x_list  = np.zeros([nfact, nλ, nw, nt_core, nθ, px_len], dtype=np.float)
+    p_x_list  = np.zeros([nfact, nλ, nw, nt_core, nθ, px_len], dtype=np.float)
+    p_y_list  = np.zeros([nfact, nλ, nw, nt_core, nθ, py_len], dtype=np.float)
 
     for out_ind in range(len(out_list)):
         out = out_list[out_ind]
@@ -289,19 +305,31 @@ def collect_wgparams_sweep(params,sweep_name='test',n_proc=n_proc_def,data_dir=d
         if 'neff' in out.keys():
             neff_list[inds] = out['neff']
             ng_list[inds] = out['ng']
+            ng_geom_list[inds] = out['ng_geom']
             p_mat_core_list[inds] = out['p_mat_core']
             p_mat_core_x_list[inds] = out['p_mat_core_x']
+            p_x_list[inds] = out['p_x']
+            p_y_list[inds] = out['p_y']
         else:
             neff_list[inds] = np.nan
             ng_list[inds] = np.nan
+            ng_geom_list[inds] = np.nan
             p_mat_core_list[inds] = np.nan
-            p_mat_core_x_list[inds] = np.nan
+            # p_mat_core_x_list[inds] = np.nan
+            # p_x_list[inds] = np.nan
+            # p_y_list[inds] = np.nan
+
 
     np.save(sweep_data_fpath,
             {"neff": neff_list,
              "ng": ng_list,
+             "ng_geom": ng_geom_list,
              "p_mat_core": p_mat_core_list,
-             "p_mat_core_x": p_mat_core_x_list})
+             "p_mat_core_x": p_mat_core_x_list,
+             "p_x": p_x,
+             "p_y": p_y,
+             }
+            )
 
 def _multivalued_params(params,verbose=True):
         multivalued_params = OrderedDict([])

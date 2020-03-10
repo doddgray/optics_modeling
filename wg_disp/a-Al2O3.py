@@ -32,6 +32,7 @@ params = {'w_top_list': np.linspace(300,1500,9) * u.nm,
          'n_points': 32, # number of k-points simulated
          'n_bands': 4, # number of bands simulated
          'res': 128, # real-space resolution
+         'edge_gap': 0.5, # μm, gap between non-background objects that would normally extend to infinity in x or y and unit-cell edge, to avoid finding modes in substrates, slabs, etc.
  }
 
 # collect_wgparams_sweep(params,
