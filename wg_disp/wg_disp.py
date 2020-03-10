@@ -43,7 +43,7 @@ elif hostname=='hogwarts4':
     nice_level_def = 19 # Unix, lowest priority is 19
 else: # assume I'm on a MTL server or something
     data_dir = home+'/data/wg_disp/'
-    n_proc_def = 16
+    n_proc_def = 32
     nice_level_def = 19 # Unix, lowest priority is 19
 
 ###
