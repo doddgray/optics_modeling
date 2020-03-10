@@ -31,7 +31,7 @@ params = {'w_top_list': np.linspace(300,1500,9) * u.nm,
          'Ygrid': 4, # y lattice vector
          'n_points': 32, # number of k-points simulated
          'n_bands': 4, # number of bands simulated
-         'res': 128, # real-space resolution
+         'res': 64, # real-space resolution
          'edge_gap': 0.5, # μm, gap between non-background objects that would normally extend to infinity in x or y and unit-cell edge, to avoid finding modes in substrates, slabs, etc.
  }
 
@@ -72,9 +72,11 @@ params = {'w_top_list': np.linspace(300,1500,9) * u.nm,
 params_sio2_subs = params.copy()
 params_sio2_subs['mat_clad'] = 'Air'
 params_sio2_subs['mat_subs'] = 'SiO2'
+# params_sio2_subs['Xgrid'] = 6
+# params_sio2_subs['Ygrid'] = 6
 
-restart_sweep_dir = '/homes/dodd/data/wgparams_sweep_Al2O3_SubsSiO2_2020_03_08_09_54_18'
-
+# restart_sweep_dir = '/homes/dodd/data/wgparams_sweep_Al2O3_SubsSiO2_2020_03_08_09_54_18'
+restart_sweep_dir = None
 collect_wgparams_sweep(params_sio2_subs,
                         sweep_name='Al2O3_SubsSiO2',
                         n_proc=n_proc_def,
@@ -87,6 +89,8 @@ collect_wgparams_sweep(params_sio2_subs,
 params_mgf2_subs = params.copy()
 params_mgf2_subs['mat_clad'] = 'Air'
 params_mgf2_subs['mat_subs'] = 'MgF2'
+# params_mgf2_subs['Xgrid'] = 6
+# params_mgf2_subs['Ygrid'] = 6
 
 collect_wgparams_sweep(params_mgf2_subs,
                         sweep_name='Al2O3_SubsMgF2',

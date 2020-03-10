@@ -31,19 +31,18 @@ from instrumental import u
 
 
 ###
+home = str( Path.home() )
 hostname = socket.gethostname()
 if hostname=='dodd-laptop':
-    data_dir = "/home/dodd/data/wg_disp"
+    data_dir = home+'/data/wg_disp/'
     n_proc_def = 6
     nice_level_def = 19 # Unix, lowest priority is 19
 elif hostname=='hogwarts4':
-    home = str( Path.home() )
-    data_dir = home+'/data/'
+    data_dir = home+'/data/wg_disp/'
     n_proc_def = 12
     nice_level_def = 19 # Unix, lowest priority is 19
 else: # assume I'm on a MTL server or something
-    home = str( Path.home() )
-    data_dir = home+'/data/'
+    data_dir = home+'/data/wg_disp/'
     n_proc_def = 16
     nice_level_def = 19 # Unix, lowest priority is 19
 
@@ -103,10 +102,10 @@ def get_wgparams(w_top,θ,t_core,t_etch,lam,mat_core,mat_clad,Xgrid,Ygrid,n_poin
         subs = mp.Block(size=mp.Vector3(Xgrid-edge_gap, (Ygrid-edge_gap)/2. , mp.inf), center=mp.Vector3(0, -(Ygrid-edge_gap)/4., 0),material=med_subs)
         geom += [subs,]
         n_guess = (n_subs+n_core)/2.
-        n_min = n_subs
+        n_min = n_clad # n_subs
     else:
         n_guess = (n_clad+n_core)/2.
-        n_min = n_subs
+        n_min = n_clad
 
     ms = mpb.ModeSolver(geometry_lattice=lat,
                         geometry=[],
