@@ -325,8 +325,8 @@ def collect_wgparams_sweep(params,sweep_name='test',n_proc=n_proc_def,data_dir=d
              "ng_geom": ng_geom_list,
              "p_mat_core": p_mat_core_list,
              "p_mat_core_x": p_mat_core_x_list,
-             "p_x": p_x,
-             "p_y": p_y,
+             "p_x": p_x_list,
+             "p_y": p_y_list,
              }
             )
 
