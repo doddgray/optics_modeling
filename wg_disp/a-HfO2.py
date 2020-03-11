@@ -18,11 +18,11 @@ from wg_disp import collect_wgparams_sweep, data_dir, n_proc_def
 from instrumental import u
 
 
-params = {'w_top_list': np.linspace(300,1500,9) * u.nm,
-         'λ_list': np.linspace(0.32,1.8,40)*u.um,
+params = {'w_top_list': np.linspace(400,2000,5) * u.nm,
+         'λ_list': np.linspace(0.32,1.8,30)*u.um,
          'λ_factor_list': np.array([1,0.95,1.05]),
          'θ_list': np.array([0,20]), # sidewall internal angle at top of core, degrees
-         't_core_list': np.array([100,200,300,400,500,600,700,800,900,1000]) * u.nm,  # core thickness
+         't_core_list':  np.array([200,400,600,800,1000,1200]) * u.nm,  # core thickness
          't_etch': 200 * u.nm,  # partial (or complete) etch depth
          'mat_core': 'Hafnia',
          'mat_clad': 'SiO2',
@@ -31,7 +31,7 @@ params = {'w_top_list': np.linspace(300,1500,9) * u.nm,
          'Ygrid': 4, # y lattice vector
          'n_points': 32, # number of k-points simulated
          'n_bands': 4, # number of bands simulated
-         'res': 128, # real-space resolution
+         'res': 64, # real-space resolution
          'edge_gap': 0.5, # μm, gap between non-background objects that would normally extend to infinity in x or y and unit-cell edge, to avoid finding modes in substrates, slabs, etc.
  }
 
@@ -74,7 +74,9 @@ params_sio2_subs = params.copy()
 params_sio2_subs['mat_clad'] = 'Air'
 params_sio2_subs['mat_subs'] = 'SiO2'
 
-restart_sweep_dir = '/homes/dodd/data/wgparams_sweep_HfO2_SubsSiO2_2020_03_08_09_54_56'
+# restart_sweep_dir = '/homes/dodd/data/wgparams_sweep_HfO2_SubsSiO2_2020_03_08_09_54_56'
+restart_sweep_dir = None
+
 
 collect_wgparams_sweep(params_sio2_subs,
                         sweep_name='HfO2_SubsSiO2',
