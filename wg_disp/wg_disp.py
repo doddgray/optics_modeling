@@ -35,11 +35,11 @@ home = str( Path.home() )
 hostname = socket.gethostname()
 if hostname=='dodd-laptop':
     data_dir = home+'/data/wg_disp/'
-    n_proc_def = 6
+    n_proc_def = 12
     nice_level_def = 19 # Unix, lowest priority is 19
 elif hostname=='hogwarts4':
     data_dir = home+'/data/wg_disp/'
-    n_proc_def = 12
+    n_proc_def = 32
     nice_level_def = 19 # Unix, lowest priority is 19
 else: # assume I'm on a MTL server or something
     data_dir = home+'/data/wg_disp/'
