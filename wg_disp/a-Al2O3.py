@@ -75,8 +75,9 @@ params_sio2_subs['mat_subs'] = 'SiO2'
 # params_sio2_subs['Xgrid'] = 6
 # params_sio2_subs['Ygrid'] = 6
 
-# restart_sweep_dir = '/homes/dodd/data/wgparams_sweep_Al2O3_SubsSiO2_2020_03_08_09_54_18'
-restart_sweep_dir = None
+# restart_sweep_dir = None
+restart_sweep_dir = '/homes/dodd/data/wg_disp/wgparams_sweep_Al2O3_SubsSiO2_2020_03_10_14_03_08'
+
 collect_wgparams_sweep(params_sio2_subs,
                         sweep_name='Al2O3_SubsSiO2',
                         n_proc=n_proc_def,
