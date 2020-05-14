@@ -19,10 +19,10 @@ from instrumental import u
 
 
 params = {'w_top_list': np.linspace(300,1500,9) * u.nm,
-         'λ_list': np.linspace(0.32,1.8,40)*u.um,
+         'λ_list': np.linspace(0.32,1.8,20)*u.um,
          'λ_factor_list': np.array([1,0.95,1.05]),
          'θ_list': np.array([0,20]), # sidewall internal angle at top of core, degrees
-         't_core_list': np.array([100,200,300,400,500,600,700,800,900,1000]) * u.nm,  # core thickness
+         't_core_list': np.array([200,400,600,800,1000]) * u.nm,  # core thickness
          't_etch': 200 * u.nm,  # partial (or complete) etch depth
          'mat_core': 'Alumina',
          'mat_clad': 'SiO2',

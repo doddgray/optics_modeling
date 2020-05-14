@@ -13,7 +13,7 @@ from pathlib import Path
 
 ### import index models ###
 home = str( Path.home() )
-nlo_dir = home+'/github/optics_modeling/NLO_tools'
+nlo_dir = home+'/github/optics_modeling/nlo'
 if nlo_dir not in sys.path:
     sys.path.append(nlo_dir)
 import NLO_tools as nlo
