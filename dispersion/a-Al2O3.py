@@ -69,33 +69,34 @@ params = {'w_top_list': np.linspace(300,1500,9) * u.nm,
 #                         return_data=False,
 #                         )
 
-params_sio2_subs = params.copy()
-params_sio2_subs['mat_clad'] = 'Air'
-params_sio2_subs['mat_subs'] = 'SiO2'
-# params_sio2_subs['Xgrid'] = 6
-# params_sio2_subs['Ygrid'] = 6
+# params_sio2_subs = params.copy()
+# params_sio2_subs['mat_clad'] = 'Air'
+# params_sio2_subs['mat_subs'] = 'SiO2'
+# # params_sio2_subs['Xgrid'] = 6
+# # params_sio2_subs['Ygrid'] = 6
 
-# restart_sweep_dir = None
-restart_sweep_dir = '/homes/dodd/data/wg_disp/wgparams_sweep_Al2O3_SubsSiO2_2020_03_10_14_03_08'
+# # restart_sweep_dir = None
+# restart_sweep_dir = '/homes/dodd/data/wg_disp/wgparams_sweep_Al2O3_SubsSiO2_2020_03_10_14_03_08'
 
-collect_wgparams_sweep(params_sio2_subs,
-                        sweep_name='Al2O3_SubsSiO2',
-                        n_proc=n_proc_def,
-                        sweep_dir=restart_sweep_dir,
-                        data_dir=data_dir,
-                        verbose=True,
-                        return_data=False,
-                        )
+# collect_wgparams_sweep(params_sio2_subs,
+#                         sweep_name='Al2O3_SubsSiO2',
+#                         n_proc=n_proc_def,
+#                         sweep_dir=restart_sweep_dir,
+#                         data_dir=data_dir,
+#                         verbose=True,
+#                         return_data=False,
+#                         )
 
 params_mgf2_subs = params.copy()
 params_mgf2_subs['mat_clad'] = 'Air'
 params_mgf2_subs['mat_subs'] = 'MgF2'
 # params_mgf2_subs['Xgrid'] = 6
 # params_mgf2_subs['Ygrid'] = 6
-
+restart_sweep_dir = '/homes/dodd/data/wg_disp/wgparams_sweep_Al2O3_SubsMgF2_2020_03_11_15_01_45'
 collect_wgparams_sweep(params_mgf2_subs,
                         sweep_name='Al2O3_SubsMgF2',
                         n_proc=n_proc_def,
+                        sweep_dir=restart_sweep_dir,
                         data_dir=data_dir,
                         verbose=True,
                         return_data=False,
