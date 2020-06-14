@@ -13,7 +13,7 @@ import numpy as np
 
 try:
 	from instrumental import u, Q_
-except NameError:
+except ModuleNotFoundError:
 	from pint import UnitRegistry
 	u = UnitRegistry()
 	Q_ = u.Quantity

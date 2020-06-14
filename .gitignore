@@ -1,4 +1,5 @@
 *~
+*.h5
 *.pyc
 *.cpython-35.pyc.[0-9]*
 *.cpython-36.pyc.[0-9]*
