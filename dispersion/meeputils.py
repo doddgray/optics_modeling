@@ -14,10 +14,12 @@ from pathlib import Path
 ### import index models ###
 home = str( Path.home() )
 nlo_dir = home+'/github/optics_modeling/nlo'
+rii_dir = home+'/github/optics_modeling/RII_db_tools'
 if nlo_dir not in sys.path:
     sys.path.append(nlo_dir)
+    # sys.path.append(rii_dir)
 import NLO_tools as nlo
-
+# import RII_db_tools as rii
 u = nlo.u
 
 def _n_linbo3(λ,T=300*u.degK,axis='e'):
@@ -43,6 +45,14 @@ def _n_mgf2(λ,T=300*u.degK):
 
 def _ng_mgf2(λ,T=300*u.degK):
     return nlo.n_g_MgF2(λ*u.um,T)
+
+def _n_silicon(λ,T=300*u.degK):
+    return nlo.n_silicon(λ*u.um,T)
+
+def _ng_silicon(λ,T=300*u.degK):
+    return nlo.n_g_silicon(λ*u.um,T)
+
+
 
 # n_Si3N4(lm_in,T_in)
 

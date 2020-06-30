@@ -27,7 +27,8 @@ from meep import mpb
 import meeputils as mu
 from wurlitzer import pipes, STDOUT
 from io import StringIO
-from instrumental import u
+# from instrumental import u
+u = mu.u
 
 
 ###
@@ -166,7 +167,7 @@ def get_wgparams(w_top,θ,t_core,t_etch,lam,mat_core,mat_clad,Xgrid,Ygrid,n_poin
         k = ms.find_k(mp.NO_PARITY,             # parity (meep parity object)
                       1/lam,                    # ω at which to solve for k
                       1,                        # band_min (find k(ω) for bands
-                      1,                        # band_max  band_min:band_max)
+                      n_bands,                        # band_max  band_min:band_max)
                       mp.Vector3(0, 0, 1),      # k direction to search
                       1e-4,                     # fractional k error tolerance
                       n_guess/lam,              # kmag_guess, |k| estimate
