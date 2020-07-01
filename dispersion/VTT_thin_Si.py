@@ -28,11 +28,11 @@ params_f = {'w_top_list': np.linspace(1000,1500,5) * u.nm,
          'mat_core': 'Si',
          'mat_clad': 'SiO2',
          'mat_subs': None,
-         'Xgrid': 4, # x lattice vector
-         'Ygrid': 4, # y lattice vector
+         'Xgrid': 6, # x lattice vector
+         'Ygrid': 6, # y lattice vector
          'n_points': 32, # number of k-points simulated
          'n_bands': 4, # number of bands simulated
-         'res': 32, # real-space resolution
+         'res': 64, # real-space resolution
          'edge_gap': 1.0, # μm, gap between non-background objects that would normally extend to infinity in x or y and unit-cell edge, to avoid finding modes in substrates, slabs, etc.
  }
 
@@ -54,11 +54,11 @@ params_2f = {'w_top_list': np.linspace(1000,1500,5) * u.nm,
          'mat_core': 'Si',
          'mat_clad': 'SiO2',
          'mat_subs': None,
-         'Xgrid': 4, # x lattice vector
-         'Ygrid': 4, # y lattice vector
+         'Xgrid': 6, # x lattice vector
+         'Ygrid': 6, # y lattice vector
          'n_points': 32, # number of k-points simulated
          'n_bands': 4, # number of bands simulated
-         'res': 32, # real-space resolution
+         'res': 64, # real-space resolution
          'edge_gap': 1.0, # μm, gap between non-background objects that would normally extend to infinity in x or y and unit-cell edge, to avoid finding modes in substrates, slabs, etc.
  }
 

@@ -58,6 +58,23 @@ def ng_2D(H,ω,eps,x,y,kz,a=1):
 
 grad_ng_2D = grad(ng_2D,(0,1,2))
 
+# fake functions similar to ng calc but only requiring H field to check field sensitivity calculation
+
+def Df_2D(H,ω,x,y,kz,a=1):
+    return curl_2D(H,x,y,kz,a=a)
+
+def Sf_2D(H,ω,eps,x,y,kz,a=1):
+    return npa.cross(npa.conjugate(Df_2D(H,ω,x,y,kz,a=a)),H)
+
+def Uf_2D(H,ω,eps,x,y,kz,a=1):
+    return npa.sum(npa.abs(Df_2D(H,ω,x,y,kz,a=a))**2+npa.abs(H)**2,axis=2)
+
+def ngf_2D(H,ω,eps,x,y,kz,a=1):
+    return 0.5 / ( npa.sum(npa.real(Sf_2D(H,ω,eps,x,y,kz,a=a)[:,:,2]),axis=(0,1)) / npa.sum(Uf_2D(H,ω,eps,x,y,kz,a=a),axis=(0,1)) )
+
+grad_ngf_2D = grad(ngf_2D,(0,1,2))
+
+
 # def ng_2D(H,ω,eps,x,y,kz,a=1):
 #     #V = npa.zeros_like(H)
 #     Vx = -1j* H[:,:,1]
@@ -282,19 +299,7 @@ class OptimizationProblem(object):
     def solve(self):
         # set up monitors
         self.prepare_solve()
-
-        # self.results = {"E":np.zeros((self.nx,self.ny,self.nz,3,self.n_modes),dtype='complex'),
-        #                "H":np.zeros((self.nx,self.ny,self.nz,3,self.n_modes),dtype='complex'),
-        #                "D":np.zeros((self.nx,self.ny,self.nz,3,self.n_modes),dtype='complex'),
-        #                "Dpwr":np.zeros((self.nx,self.ny,self.nz,3,self.n_modes),dtype='float'),
-        #                "ng":np.zeros((self.n_modes),dtype='float'),
-        #                # "ng_nodisp":np.zeros((self.n_modes),dtype='float'),
-        #                # "band":np.zeros((self.n_modes),dtype='int'),
-        #                # "pol":["unknown" for mind in range(self.n_modes)],
-        #             }
         self.results = {}
-
-
         # solve
         if self.verbose:
             self.ms.run(*self.band_funcs)
@@ -324,12 +329,22 @@ class OptimizationProblem(object):
                                     self.k_points[0],
                                     a=( 1 / self.k_points[0] / 2 ), # TODO: figure out what/why this value of "a" works
                                     ) for band_ind in range(self.n_modes)])
+
+        self.ngf_ag = np.array([ngf_2D(self.H[:,:,0,:,band_ind],
+                                    self.ω[band_ind],
+                                    self.epsilon,
+                                    self.x,
+                                    self.y,
+                                    self.k_points[0],
+                                    a=( 1 / self.k_points[0] / 2 ), # TODO: figure out what/why this value of "a" works
+                                    ) for band_ind in range(self.n_modes)])
         # compute material dispersion contribution to group velocity
         # ng = ng_nodisp * (p_mat_core * (ng_core / n_core) + (1 - p_mat_core) * (ng_clad / n_clad))
-        self.vecs = self.ms.get_eigenvectors(1,self.n_modes)
+
+        # self.vecs = self.ms.get_eigenvectors(1,self.n_modes)
 
         # results_list = [self.ω[1]**2,]
-        results_list = [ self.ω**2, self.ng_ag ]
+        results_list = [ self.ω**2, self.ngf_ag ]
 
         # evaluate objectives
         self.f0 = [fi(*results_list) for fi in self.objective_functions]
@@ -358,7 +373,7 @@ class OptimizationProblem(object):
         self.grad_ω = np.zeros_like(self.ω)
         self.grad_eps_ng = np.zeros((self.Nx,self.Ny,self.n_modes))
         for band_ind in range(self.n_modes):
-            grad_H_temp, grad_ω_temp, grad_eps_temp = grad_ng_2D(self.H[:,:,0,:,band_ind],
+            grad_H_temp, grad_ω_temp, grad_eps_temp = grad_ngf_2D(self.H[:,:,0,:,band_ind],
                                                                         self.ω[band_ind],
                                                                         self.epsilon,
                                                                         self.x,
@@ -378,7 +393,7 @@ class OptimizationProblem(object):
                 scale = np.sum(np.conjugate(self.H[:,:,0,:,j])*self.grad_H[...,j]) / ( self.ω[j]**2 - self.ω[self.tracked_mode_ind]**2 ) * self.dx * self.dy
                 self.grad_eps_ng_eigs += (np.conjugate(self.E[:,:,0,:,j]) * self.E[:,:,0,:,self.tracked_mode_ind] ) * scale
 
-        E_dr = F[self.design_region_inds_vec[0][0],self.design_region_inds_vec[0][1],0,:,:]
+        E_dr = self.E[self.design_region_inds_vec[0][0],self.design_region_inds_vec[0][1],0,:,:]
         grad_eps_ω_sq_dr = np.sum(np.abs(E_dr)**2,axis=-2) # sum contributions of independent E-field components (ax=-1 is modes
         grad_eps_ng_dr = self.grad_eps_ng[self.design_region_inds_vec[0][0],self.design_region_inds_vec[0][1]]
         grad_eps_ng_eigs_dr = self.grad_eps_ng_eigs[self.design_region_inds_vec[0][0],self.design_region_inds_vec[0][1]]
@@ -446,9 +461,19 @@ class OptimizationProblem(object):
                 self.ms.init_params(self.parity, False)
                 self.ms.run(*self.band_funcs)
             ω = np.array(self.ms.freqs)
-            ng = np.array([1 / self.ms.compute_one_group_velocity_component(mp.Vector3(0, 0, 1), band_ind+1) for band_ind in range(self.n_modes)])
+            #ng = np.array([1 / self.ms.compute_one_group_velocity_component(mp.Vector3(0, 0, 1), band_ind+1) for band_ind in range(self.n_modes)])
+            H = np.stack([np.array(self.ms.get_hfield(mind+1)) for mind in range(self.n_modes)],axis=-1)
+            ng = np.array([ngf_2D(H[:,:,0,:,band_ind],
+                                    ω[band_ind],
+                                    self.epsilon,
+                                    self.x,
+                                    self.y,
+                                    self.k_points[0],
+                                    a=( 1 / self.k_points[0] / 2 ), # TODO: figure out what/why this value of "a" works
+                                    ) for band_ind in range(self.n_modes)])
             neff = self.k_points/ω
             results_list = [ω**2,ng,]
+
 
             # record final objective function value
             # results_list = []
@@ -472,7 +497,16 @@ class OptimizationProblem(object):
                 self.ms.run(*self.band_funcs)
             ω = np.array(self.ms.freqs)
             neff = self.k_points/ω
-            ng = np.array([1 / self.ms.compute_one_group_velocity_component(mp.Vector3(0, 0, 1), band_ind+1) for band_ind in range(self.n_modes)])
+            # ng = np.array([1 / self.ms.compute_one_group_velocity_component(mp.Vector3(0, 0, 1), band_ind+1) for band_ind in range(self.n_modes)])
+            H = np.stack([np.array(self.ms.get_hfield(mind+1)) for mind in range(self.n_modes)],axis=-1)
+            ng = np.array([ngf_2D(H[:,:,0,:,band_ind],
+                                    ω[band_ind],
+                                    self.epsilon,
+                                    self.x,
+                                    self.y,
+                                    self.k_points[0],
+                                    a=( 1 / self.k_points[0] / 2 ), # TODO: figure out what/why this value of "a" works
+                                    ) for band_ind in range(self.n_modes)])
             results_list = [ω**2,ng,]
             # record final objective function value
             # results_list = []

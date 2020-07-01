@@ -18,10 +18,18 @@ import yaml
 import numpy as np
 import sympy as sp
 from scipy import interpolate
-from instrumental import Q_, u
+# from instrumental import Q_, u
 from bs4 import BeautifulSoup as bs
 from pathlib import Path
 home = str( Path.home() )
+
+nlo_dir = home+'/github/optics_modeling/nlo'
+if nlo_dir not in sys.path:
+    sys.path.append(nlo_dir)
+import NLO_tools as nlo
+# u = nlo.u
+from nlo import Q_, u
+
 RII_db_dir = home + '/github/refractiveindex.info-database/database/data'
 if not os.path.isdir(RII_db_dir):
     print('Warning: refractiveindex.info database directory:')
