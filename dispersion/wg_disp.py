@@ -179,10 +179,10 @@ def get_wgparams(w_top,θ,t_core,t_etch,lam,mat_core,mat_clad,Xgrid,Ygrid,n_poin
         t_subs = Ygrid/2 - edge_gap/2 -t_core+t_etch/2
         subs = mp.Block(size=mp.Vector3(Xgrid-edge_gap, t_subs , mp.inf), center=mp.Vector3(0, -t_core+t_etch/2-t_subs/2., 0),material=med_subs)
         geom += [subs,]
-        n_guess = (n_subs+n_core)/2.
+        n_guess = n_core #(n_subs+n_core)/2.
         n_min = n_clad # n_subs
     else:
-        n_guess = (n_clad+n_core)/2.
+        n_guess = n_core #(n_clad+n_core)/2.
         n_min = n_clad
     # verts_core = [mp.Vector3(-w_top/2.,t_core),
     #         mp.Vector3(w_top/2.,t_core),
@@ -230,7 +230,8 @@ def get_wgparams(w_top,θ,t_core,t_etch,lam,mat_core,mat_clad,Xgrid,Ygrid,n_poin
         mat_subs_mask = (np.abs(np.sqrt(eps) - n_subs ) / n_subs) < 0.01
 
     out = {}
-
+    print(f'n_min: {n_min:3.3f}' )
+    print(f'n_guess: {n_guess:3.3f}' )
     def get_fieldprops(ms, band):
         if (out != {}):
             return
