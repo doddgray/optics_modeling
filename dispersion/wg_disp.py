@@ -62,6 +62,22 @@ def limit_cpu():
     # p.nice(psutil.BELOW_NORMAL_PRIORITY_CLASS) # windows
     p.nice(nice_level_def) # Unix, lowest priority is 19
 
+def get_intersect(a1, a2, b1, b2):
+    """
+    Returns the point of intersection of the lines passing through a2,a1 and b2,b1.
+    a1: [x, y] a point on the first line
+    a2: [x, y] another point on the first line
+    b1: [x, y] a point on the second line
+    b2: [x, y] another point on the second line
+    """
+    s = np.vstack([a1,a2,b1,b2])        # s for stacked
+    h = np.hstack((s, np.ones((4, 1)))) # h for homogeneous
+    l1 = np.cross(h[0], h[1])           # get first line
+    l2 = np.cross(h[2], h[3])           # get second line
+    x, y, z = np.cross(l1, l2)          # point of intersection
+    if z == 0:                          # lines are parallel
+        return (float('inf'), float('inf'))
+    return (x/z, y/z)
 
 def conformal_verts(obj,t):
     """
@@ -230,8 +246,7 @@ def get_wgparams(w_top,θ,t_core,t_etch,lam,mat_core,mat_clad,Xgrid,Ygrid,n_poin
         mat_subs_mask = (np.abs(np.sqrt(eps) - n_subs ) / n_subs) < 0.01
 
     out = {}
-    print(f'n_min: {n_min:3.3f}' )
-    print(f'n_guess: {n_guess:3.3f}' )
+
     def get_fieldprops(ms, band):
         if (out != {}):
             return
