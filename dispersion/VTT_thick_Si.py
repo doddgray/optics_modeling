@@ -26,14 +26,14 @@ params_f = {'w_top_list': np.linspace(2.4,2.6,3) * u.um,
          't_core_list':  np.array([3000]) * u.nm,  # core thickness
          't_etch': 1200 * u.nm,  # partial (or complete) etch depth
          'mat_core': 'Si',
-         'mat_clad': 'SiO2',
-         'mat_subs': None,
-         'Xgrid': 6, # x lattice vector
-         'Ygrid': 6, # y lattice vector
+         'mat_clad': 'Air',
+         'mat_subs': 'SiO2',
+         'Xgrid': 8, # x lattice vector
+         'Ygrid': 8, # y lattice vector
          'n_points': 32, # number of k-points simulated
          'n_bands': 4, # number of bands simulated
-         'res': 64, # real-space resolution
-         'edge_gap': 0.8, # μm, gap between non-background objects that would normally extend to infinity in x or y and unit-cell edge, to avoid finding modes in substrates, slabs, etc.
+         'res': 32, # real-space resolution
+         'edge_gap': 1.0, # μm, gap between non-background objects that would normally extend to infinity in x or y and unit-cell edge, to avoid finding modes in substrates, slabs, etc.
  }
 
 collect_wgparams_sweep(params_f,

@@ -62,6 +62,44 @@ def limit_cpu():
     # p.nice(psutil.BELOW_NORMAL_PRIORITY_CLASS) # windows
     p.nice(nice_level_def) # Unix, lowest priority is 19
 
+
+def conformal_verts(obj,t):
+    """
+    Returns a list of vertices for a "conformal" meep Prism object around the meep/mpb geometry
+    object obj with thickness t
+
+    inputs:
+    obj:  meep/mpb geometry object
+    t:    conformal layer thickness in um (float)
+
+    outputs:
+    conformal_vertices:  list of meep.Vector3 vector objects
+    """
+    verts = obj.vertices
+    for vind, vv in enumerate(verts):
+        verts[vind] = mp.Vector3(vv[0],vv[1],0.0)
+    edges = [verts[ind+1]-verts[ind] for ind in range(len(verts)-1)] + [verts[0]-verts[-1],]
+    edge_centers = [verts[ind]+edges[ind]/2. for ind in range(len(verts))]
+    edge_normals = [ mp.Vector3(0,0,1).cross(e).unit() for e in edges ]
+    ts = [t for v in verts] # * np.ones(len(verts))
+    for ind in range(len(verts)):
+        # if mp.is_point_in_object(edge_centers[ind] + edge_normals[ind]*0.001, obj):
+            # print(f'reversing edge normal {ind}')
+#             edge_normals[ind] = edge_normals[ind] * -1
+        if edge_normals[ind][1] < 0:
+            ts[ind] = 0.
+    vrts = [(verts[ind]+ts[ind]*edge_normals[ind],verts[ind+1]+ts[ind]*edge_normals[ind]) for ind in range(len(verts)-1)] + [( verts[-1]+ts[-1]*edge_normals[-1], verts[0]+ts[-1]*edge_normals[-1] ),]
+    conformal_verts_init = [ get_intersect((vrts[ind][0][0],vrts[ind][0][1]),
+                                      (vrts[ind][1][0],vrts[ind][1][1]),
+                                      (vrts[ind+1][0][0],vrts[ind+1][0][1]),
+                                      (vrts[ind+1][1][0],vrts[ind+1][1][1])) for ind in range(len(verts)-1)]
+    conformal_verts_init += [ get_intersect((vrts[-1][0][0],vrts[-1][0][1]),
+                                      (vrts[-1][1][0],vrts[-1][1][1]),
+                                      (vrts[0][0][0],vrts[0][0][1]),
+                                      (vrts[0][1][0],vrts[0][1][1])), ]
+    conformal_verts_final = [mp.Vector3(v[0],v[1],0.) for v in conformal_verts_init]
+    return conformal_verts_final
+
 def get_wgparams(w_top,θ,t_core,t_etch,lam,mat_core,mat_clad,Xgrid,Ygrid,n_points,mat_subs=None,n_bands=4,res=32,edge_gap=1,do_func=None,):
     """
     Solves for mode, n_eff and ng_eff at some wavelength lam for a set of
@@ -82,31 +120,95 @@ def get_wgparams(w_top,θ,t_core,t_etch,lam,mat_core,mat_clad,Xgrid,Ygrid,n_poin
     k_points = mp.interpolate(n_points, [mp.Vector3(0.05, 0, 0), mp.Vector3(0.05*n_points, 0, 0)])
     lat = mp.Lattice(size=mp.Vector3(Xgrid, Ygrid,0))
     dx_base = np.tan(np.deg2rad(θ)) * t_etch
-    verts_core = [mp.Vector3(-w_top/2.,t_core),
-            mp.Vector3(w_top/2.,t_core),
-            mp.Vector3(w_top/2+dx_base,t_core-t_etch),
-            mp.Vector3(-w_top/2-dx_base,t_core-t_etch),
-           ]
-    core = mp.Prism(verts_core, height=mp.inf, material=med_core)
+    ### hardcode conformal layer temporarily! ###
+    any_conformal = True
+    t_ald = 0.5
+    mat_ald = 'SiO2'
+    n_ald = mu.get_index(mat_ald, lam); ng_ald = mu.get_ng(mat_ald, lam)
+    med_ald = mp.Medium(index=n_ald)
+    ################################################
+    verts_core = [  mp.Vector3(-w_top/2., t_etch/2,  0,  ),
+                mp.Vector3( w_top/2., t_etch/2,  0, ),
+                mp.Vector3(w_top/2+dx_base, -t_etch/2,  0,  ),
+                mp.Vector3( -w_top/2-dx_base, -t_etch/2,  0, ),
+             ]
+
+    core = mp.Prism(verts_core,
+                axis = mp.Vector3(0,0,1),
+                height=mp.inf,
+                center=mp.Vector3(),
+                material=med_core,
+               )
+
+    if any_conformal:
+        ald_core = mp.Prism(conformal_verts(core,t_ald), height=mp.inf, material=med_ald)
+        ald_slab = mp.Block(size=mp.Vector3(Xgrid-edge_gap, t_ald , mp.inf), center=mp.Vector3(0, (-t_etch/2+t_ald/2), 0), material=med_ald)
+
     if t_etch<t_core:   # partial etch
-        slab = mp.Block(size=mp.Vector3(Xgrid-edge_gap, t_core-t_etch , mp.inf), center=mp.Vector3(0, (t_core-t_etch), 0),material=med_core)
-        geom = [core,
-                slab,
-                ]
-        # print('adding slab block')
+        slab = mp.Block(size=mp.Vector3(Xgrid-edge_gap,
+                                        t_core-t_etch,
+                                        mp.inf,),
+                        center=mp.Vector3(0,
+                                          -t_core/2,
+                                          0,),
+                        material=med_core,
+                       )
+        if any_conformal:
+            geom = [ald_core,
+                    ald_slab,
+                    core,
+                    slab,
+                    ]
+        else:
+            geom = [core,
+                    slab,
+                    ]
+    # print('adding slab block')
     else:
-        geom = [core,]
+        if any_conformal:
+            geom = [ald_core,
+                    ald_slab,
+                    core,
+                    ]
+        else:
+            geom = [core,]
     if mat_subs:
         n_subs = mu.get_index(mat_subs, lam)
         ng_subs = mu.get_ng(mat_subs, lam)
         med_subs = mp.Medium(index=n_subs)
-        subs = mp.Block(size=mp.Vector3(Xgrid-edge_gap, (Ygrid-edge_gap)/2. , mp.inf), center=mp.Vector3(0, -(Ygrid-edge_gap)/4., 0),material=med_subs)
+        t_subs = Ygrid/2 - edge_gap/2 -t_core+t_etch/2
+        subs = mp.Block(size=mp.Vector3(Xgrid-edge_gap, t_subs , mp.inf), center=mp.Vector3(0, -t_core+t_etch/2-t_subs/2., 0),material=med_subs)
         geom += [subs,]
         n_guess = (n_subs+n_core)/2.
         n_min = n_clad # n_subs
     else:
         n_guess = (n_clad+n_core)/2.
         n_min = n_clad
+    # verts_core = [mp.Vector3(-w_top/2.,t_core),
+    #         mp.Vector3(w_top/2.,t_core),
+    #         mp.Vector3(w_top/2+dx_base,t_core-t_etch),
+    #         mp.Vector3(-w_top/2-dx_base,t_core-t_etch),
+    #        ]
+    # core = mp.Prism(verts_core, height=mp.inf, material=med_core)
+    # if t_etch<t_core:   # partial etch
+    #     slab = mp.Block(size=mp.Vector3(Xgrid-edge_gap, t_core-t_etch , mp.inf), center=mp.Vector3(0, (t_core-t_etch), 0),material=med_core)
+    #     geom = [core,
+    #             slab,
+    #             ]
+    #     # print('adding slab block')
+    # else:
+    #     geom = [core,]
+    # if mat_subs:
+    #     n_subs = mu.get_index(mat_subs, lam)
+    #     ng_subs = mu.get_ng(mat_subs, lam)
+    #     med_subs = mp.Medium(index=n_subs)
+    #     subs = mp.Block(size=mp.Vector3(Xgrid-edge_gap, (Ygrid-edge_gap)/2. , mp.inf), center=mp.Vector3(0, -(Ygrid-edge_gap)/4., 0),material=med_subs)
+    #     geom += [subs,]
+    #     n_guess = (n_subs+n_core)/2.
+    #     n_min = n_clad # n_subs
+    # else:
+    #     n_guess = (n_clad+n_core)/2.
+    #     n_min = n_clad
 
     ms = mpb.ModeSolver(geometry_lattice=lat,
                         geometry=[],
